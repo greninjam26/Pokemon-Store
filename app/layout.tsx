@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { APP_DESCRIPTION, APP_NAME, SERVER_URL } from "@/lib/constant";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Pokemon Store",
-	description: "{later}",
+	title: APP_NAME,
+	description: APP_DESCRIPTION,
+	metadataBase: new URL(SERVER_URL),
 };
 
 export default function RootLayout({

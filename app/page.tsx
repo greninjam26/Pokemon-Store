@@ -1,3 +1,0 @@
-const Homepage = () => {
-	return <>Pokemon</>;
-};
