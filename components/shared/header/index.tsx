@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/constant";
+import ModeToggle from "./mode-toggle";
 
 function Header() {
 	return (
@@ -23,7 +24,8 @@ function Header() {
 						</span>
 					</Link>
 				</div>
-				<div className="space-x-2">
+				<div className="flex items-center gap-2">
+					<ModeToggle />
 					<Button asChild variant="ghost">
 						<Link href="/cart">
 							<ShoppingCart />
