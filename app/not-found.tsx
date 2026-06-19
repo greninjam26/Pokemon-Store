@@ -6,7 +6,7 @@ import { APP_NAME } from "@/lib/constant";
 
 function NotFoundPage() {
 	return (
-		<div className="flex flex-col items-center justify-center min-h-screen">
+		<div className="wrapper flex min-h-[70vh] flex-col items-center justify-center gap-6 text-center">
 			<Image
 				src="/images/logo.svg"
 				width={48}
@@ -14,17 +14,15 @@ function NotFoundPage() {
 				alt={`${APP_NAME} logo`}
 				priority={true}
 			/>
-			<div className="p-6 w-1/3 rounded-lg shadow-md text-center">
-				<h1 className="text-3xl font-bold mb-4">Not Found</h1>
-				<p className="text-destructive">
-					Could not find requested page
+			<div className="flex max-w-md flex-col items-center gap-4">
+				<p className="text-sm font-medium text-muted-foreground">404</p>
+				<h1 className="h1-bold">Page not found</h1>
+				<p className="text-base leading-7 text-muted-foreground">
+					We could not find the page you were looking for. It may have
+					moved, or the link may be outdated.
 				</p>
-				<Button
-					asChild
-					variant="outline"
-					className="mt-4"
-				>
-					<Link href="/">Back To Home</Link>
+				<Button asChild variant="outline">
+					<Link href="/">Back to Home</Link>
 				</Button>
 			</div>
 		</div>

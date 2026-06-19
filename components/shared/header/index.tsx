@@ -6,8 +6,8 @@ import Menu from "./menu";
 
 function Header() {
 	return (
-		<header className="w-full border-b">
-			<div className="wrapper flex-between">
+		<header className="w-full border-b bg-card/95 shadow-sm">
+			<div className="wrapper flex-between py-3">
 				<div className="flex-start">
 					<Link href="/" className="flex-start">
 						<Image
@@ -17,7 +17,7 @@ function Header() {
 							height={48}
 							alt={`${APP_NAME} logo`}
 						/>
-						<span className="hidden lg:block font-bold text-2xl ml-3">
+						<span className="ml-3 hidden text-2xl font-black leading-none text-primary lg:block">
 							{APP_NAME}
 						</span>
 					</Link>

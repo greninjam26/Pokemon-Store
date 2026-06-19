@@ -37,7 +37,7 @@ function ModeToggle({ className }: { className?: string }) {
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
-				<DropdownMenuLabel>Theme</DropdownMenuLabel>
+				<DropdownMenuLabel>Display Mode</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuCheckboxItem
 					checked={theme === "light"}

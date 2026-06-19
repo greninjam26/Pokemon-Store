@@ -46,7 +46,7 @@ function Menu() {
 						<SheetHeader>
 							<SheetTitle>Menu</SheetTitle>
 							<SheetDescription>
-								Manage your store navigation and display mode.
+								Quick access to your cart, account, and display settings.
 							</SheetDescription>
 						</SheetHeader>
 						<div className="flex flex-col gap-3 px-4">
@@ -60,7 +60,7 @@ function Menu() {
 								<Button
 									asChild
 									variant="ghost"
-									className="justify-start"
+									className="justify-start text-base"
 								>
 									<Link href="/cart">
 										<ShoppingCart />
@@ -69,7 +69,7 @@ function Menu() {
 								</Button>
 							</SheetClose>
 							<SheetClose asChild>
-								<Button asChild className="justify-start">
+								<Button asChild className="justify-start text-base">
 									<Link href="/sign-in">
 										<UserIcon />
 										Sign In
