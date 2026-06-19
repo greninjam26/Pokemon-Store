@@ -12,8 +12,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
-function ModeToggle() {
+function ModeToggle({ className }: { className?: string }) {
 	const { setTheme, theme } = useTheme();
 
 	const ThemeIcon =
@@ -24,7 +25,10 @@ function ModeToggle() {
 			<DropdownMenuTrigger asChild>
 				<Button
 					variant="ghost"
-					className="hover:bg-primary/10 hover:text-primary aria-expanded:border-transparent aria-expanded:bg-primary/10 focus-visible:border-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-primary/20 dark:aria-expanded:bg-primary/20"
+					className={cn(
+						"hover:bg-primary/10 hover:text-primary aria-expanded:border-transparent aria-expanded:bg-primary/10 focus-visible:border-transparent focus-visible:ring-0 focus-visible:ring-offset-0 dark:hover:bg-primary/20 dark:aria-expanded:bg-primary/20",
+						className,
+					)}
 					size="icon"
 					aria-label="Toggle theme"
 				>
