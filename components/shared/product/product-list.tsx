@@ -1,4 +1,5 @@
-import ProductCard, { type Product } from "./product-card";
+import type { Product } from "@/lib/validator";
+import ProductCard from "./product-card";
 
 type ProductListProps = {
 	products: Product[];

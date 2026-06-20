@@ -1,32 +1,14 @@
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
-
-export type Product = {
-	name: string;
-	slug: string;
-	category: string;
-	description: string;
-	images: string[];
-	price: number;
-	brand: string;
-	rating: number;
-	numReviews: number;
-	stock: number;
-	isFeatured: boolean;
-	banner: string | null;
-};
-
-type ProductCardProps = {
-	product: Product;
-};
+import type { Product } from "@/lib/validator";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
 	style: "currency",
 	currency: "CAD",
 });
 
-function ProductCard({ product }: ProductCardProps) {
+function ProductCard({ product }: { product: Product }) {
 	return (
 		<article className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md">
 			<div className="relative aspect-square bg-muted">

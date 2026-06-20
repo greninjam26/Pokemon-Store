@@ -4,6 +4,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/lib/generated/prisma/client";
 import { LATEST_PRODUCTS_LIMIT } from "@/lib/constant";
+import type { Product } from "@/lib/validator";
 
 const globalForPrisma = globalThis as unknown as {
 	prisma?: PrismaClient;
@@ -27,7 +28,7 @@ if (process.env.NODE_ENV !== "production") {
 	globalForPrisma.prisma = prisma;
 }
 
-export async function getLatestProducts() {
+export async function getLatestProducts(): Promise<Product[]> {
 	const products = await prisma.product.findMany({
 		select: {
 			name: true,
