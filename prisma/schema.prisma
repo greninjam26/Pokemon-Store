@@ -29,3 +29,52 @@ model Product {
   createdAt   DateTime @default(now()) @db.Timestamp(6)
   updatedAt   DateTime @updatedAt @db.Timestamp(6)
 }
+
+model User {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String    @default("NO_NAME")
+  email         String?   @unique
+  emailVerified DateTime? @db.Timestamp(6)
+  image         String?
+  password      String?
+  role          String    @default("user")
+  paymentMethod String?
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamp(6)
+}
+
+model Account {
+  userId            String   @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refreshToken      String?  @map("refresh_token")
+  accessToken       String?  @map("access_token")
+  expiresAt         Int?     @map("expires_at")
+  tokenType         String?  @map("token_type")
+  scope             String?
+  idToken           String?  @map("id_token")
+  sessionState      String?  @map("session_state")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now()) @db.Timestamp(6)
+  updatedAt         DateTime @updatedAt @db.Timestamp(6)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime @db.Timestamp(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime @db.Timestamp(6)
+
+  @@id([identifier, token])
+}
