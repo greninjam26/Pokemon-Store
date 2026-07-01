@@ -36,3 +36,13 @@ export const insertProductSchema = z.object({
 });
 
 export type Product = z.infer<typeof insertProductSchema>;
+
+export const signInFormSchema = z.object({
+	email: z.email("Invalid email address"),
+	password: z
+		.string()
+		.trim()
+		.min(6, "password must be at least 6 characters"),
+});
+
+export type SignInForm = z.infer<typeof signInFormSchema>;
