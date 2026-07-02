@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
+import { auth } from "@/auth";
 import {
 	Card,
 	CardContent,
@@ -10,12 +12,26 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { APP_NAME } from "@/lib/constant";
+import SignInForm from "./sign-in-form";
 
 export const metadata: Metadata = {
 	title: "Sign In",
 };
 
-function SignInPage() {
+type SignInPageProps = Readonly<{
+	searchParams: Promise<{
+		callbackUrl?: string;
+	}>;
+}>;
+
+async function SignInPage({ searchParams }: SignInPageProps) {
+	const { callbackUrl } = await searchParams;
+	const session = await auth();
+
+	if (session) {
+		redirect(callbackUrl || "/");
+	}
+
 	return (
 		<div className="mx-auto w-full max-w-md">
 			<Card>
@@ -38,8 +54,8 @@ function SignInPage() {
 						</CardDescription>
 					</div>
 				</CardHeader>
-				<CardContent className="space-y-4">
-					{/* form is here */}
+				<CardContent>
+					<SignInForm />
 				</CardContent>
 			</Card>
 		</div>

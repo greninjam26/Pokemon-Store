@@ -43,6 +43,7 @@ export const signInFormSchema = z.object({
 		.string()
 		.trim()
 		.min(6, "password must be at least 6 characters"),
+	callbackUrl: z.string().trim().default("/"),
 });
 
 export type SignInForm = z.infer<typeof signInFormSchema>;

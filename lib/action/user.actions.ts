@@ -18,11 +18,13 @@ export async function signInWithCredentials(
 		const user = signInFormSchema.parse({
 			email: formData.get("email"),
 			password: formData.get("password"),
+			callbackUrl: formData.get("callbackUrl") || "/",
 		});
 
 		await signIn("credentials", {
-			...user,
-			redirectTo: "/",
+			email: user.email,
+			password: user.password,
+			redirectTo: user.callbackUrl,
 		});
 
 		return {
