@@ -1,4 +1,4 @@
-import { EllipsisVertical, ShoppingCart, UserIcon } from "lucide-react";
+import { EllipsisVertical, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet";
 import ModeToggle from "./mode-toggle";
+import UserButton from "./user-button";
 
 function Menu() {
 	return (
@@ -24,12 +25,7 @@ function Menu() {
 						Cart
 					</Link>
 				</Button>
-				<Button asChild>
-					<Link href="/sign-in">
-						<UserIcon />
-						Sign In
-					</Link>
-				</Button>
+				<UserButton />
 			</div>
 			<div className="md:hidden">
 				<Sheet>
@@ -46,7 +42,8 @@ function Menu() {
 						<SheetHeader>
 							<SheetTitle>Menu</SheetTitle>
 							<SheetDescription>
-								Quick access to your cart, account, and display settings.
+								Quick access to your cart, account, and display
+								settings.
 							</SheetDescription>
 						</SheetHeader>
 						<div className="flex flex-col gap-3 px-4">
@@ -68,14 +65,7 @@ function Menu() {
 									</Link>
 								</Button>
 							</SheetClose>
-							<SheetClose asChild>
-								<Button asChild className="justify-start text-base">
-									<Link href="/sign-in">
-										<UserIcon />
-										Sign In
-									</Link>
-								</Button>
-							</SheetClose>
+							<UserButton className="justify-start text-base" />
 						</div>
 					</SheetContent>
 				</Sheet>
