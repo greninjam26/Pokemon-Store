@@ -4,3 +4,5 @@ export const APP_DESCRIPTION =
 export const SERVER_URL =
 	process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 export const LATEST_PRODUCTS_LIMIT = 4;
+export const CART_SESSION_COOKIE_NAME = "sessionCartId";
+export const CART_SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
