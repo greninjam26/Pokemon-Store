@@ -5,6 +5,7 @@ import { LATEST_PRODUCTS_LIMIT } from "@/lib/constant";
 import type { Product } from "@/lib/validator";
 
 const productSelect = {
+	id: true,
 	name: true,
 	slug: true,
 	category: true,

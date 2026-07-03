@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import AddToCart from "@/components/shared/product/add-to-cart";
 import { formatCurrency } from "@/lib/utils";
 import type { Product } from "@/lib/validator";
 
@@ -43,9 +43,17 @@ function ProductCard({ product }: { product: Product }) {
 							{product.rating}/5 from {product.numReviews} reviews
 						</p>
 					</div>
-					<Button disabled={product.stock === 0}>
-						{product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-					</Button>
+					<AddToCart
+						item={{
+							productId: product.id,
+							name: product.name,
+							slug: product.slug,
+							qty: 1,
+							image: product.images[0],
+							price: product.price,
+						}}
+						disabled={product.stock === 0}
+					/>
 				</div>
 			</div>
 		</article>

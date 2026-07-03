@@ -2,9 +2,9 @@ import { ArrowLeft, Star } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import AddToCart from "@/components/shared/product/add-to-cart";
 import ProductImages from "@/components/shared/product/product-images";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { getProductBySlug } from "@/lib/action/product.action";
 import { formatCurrency } from "@/lib/utils";
 
@@ -90,13 +90,19 @@ async function ProductDetailPage({ params }: ProductDetailPageProps) {
 						</div>
 					</dl>
 
-					<Button
+					<AddToCart
+						item={{
+							productId: product.id,
+							name: product.name,
+							slug: product.slug,
+							qty: 1,
+							image: product.images[0],
+							price: product.price,
+						}}
 						size="lg"
 						className="w-full"
 						disabled={product.stock === 0}
-					>
-						{product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-					</Button>
+					/>
 				</div>
 			</div>
 		</section>

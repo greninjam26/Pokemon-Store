@@ -48,7 +48,9 @@ export const insertProductSchema = z.object({
 	banner: z.string().nullable().default(null),
 });
 
-export type Product = z.infer<typeof insertProductSchema>;
+export type Product = z.infer<typeof insertProductSchema> & {
+	id: string;
+};
 
 export const signInFormSchema = z.object({
 	email: z.email("Invalid email address"),
