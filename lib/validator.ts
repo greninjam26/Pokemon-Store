@@ -1,5 +1,18 @@
 import { z } from "zod";
 
+const currencySchema = z
+	.union([z.string(), z.number()])
+	.transform((value) =>
+		typeof value === "number" ? value.toString() : value.trim(),
+	)
+	.refine((value) => value.length > 0, "Amount is required")
+	.refine(
+		(value) => /^-?\d+(\.\d{1,2})?$/.test(value),
+		"Amount must be a valid number with at most two decimal places",
+	)
+	.transform((value) => Number(value))
+	.refine((value) => value >= 0, "Amount cannot be negative");
+
 export const insertProductSchema = z.object({
 	name: z.string().trim().min(3, "Name must be at least 3 characters"),
 	slug: z
@@ -68,3 +81,29 @@ export const signUpFormSchema = z
 	});
 
 export type SignUpForm = z.infer<typeof signUpFormSchema>;
+
+export const cartItemSchema = z.object({
+	productId: z.uuid("Product id must be a valid UUID"),
+	name: z.string().trim().min(1, "Name is required"),
+	slug: z.string().trim().min(1, "Slug is required"),
+	qty: z.coerce
+		.number()
+		.int("Quantity must be a whole number")
+		.positive("Quantity must be at least 1"),
+	image: z.string().trim().min(1, "Image is required"),
+	price: currencySchema,
+});
+
+export type CartItem = z.infer<typeof cartItemSchema>;
+
+export const insertCartSchema = z.object({
+	items: z.array(cartItemSchema).default([]),
+	itemsPrice: currencySchema,
+	shippingPrice: currencySchema,
+	taxPrice: currencySchema,
+	totalPrice: currencySchema,
+	sessionCartId: z.string().trim().min(1, "Session cart id is required"),
+	userId: z.uuid("User id must be a valid UUID").optional().nullable(),
+});
+
+export type Cart = z.infer<typeof insertCartSchema>;
