@@ -1,12 +1,18 @@
+import type { CartWithItems } from "@/lib/action/cart.action";
 import type { Product } from "@/lib/validator";
 import ProductCard from "./product-card";
 
 type ProductListProps = {
 	products: Product[];
+	cart?: CartWithItems | null;
 	title?: string;
 };
 
-function ProductList({ products, title = "New Arrivals" }: ProductListProps) {
+function ProductList({
+	products,
+	cart,
+	title = "New Arrivals",
+}: ProductListProps) {
 	return (
 		<section className="space-y-6">
 			<div className="flex flex-col gap-2">
@@ -17,7 +23,11 @@ function ProductList({ products, title = "New Arrivals" }: ProductListProps) {
 			</div>
 			<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
 				{products.map((product) => (
-					<ProductCard key={product.slug} product={product} />
+					<ProductCard
+						key={product.slug}
+						product={product}
+						cart={cart}
+					/>
 				))}
 			</div>
 		</section>

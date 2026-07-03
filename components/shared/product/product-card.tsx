@@ -2,10 +2,16 @@ import Image from "next/image";
 import Link from "next/link";
 
 import AddToCart from "@/components/shared/product/add-to-cart";
+import type { CartWithItems } from "@/lib/action/cart.action";
 import { formatCurrency } from "@/lib/utils";
 import type { Product } from "@/lib/validator";
 
-function ProductCard({ product }: { product: Product }) {
+type ProductCardProps = Readonly<{
+	product: Product;
+	cart?: CartWithItems | null;
+}>;
+
+function ProductCard({ product, cart }: ProductCardProps) {
 	return (
 		<article className="overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md">
 			<Link
@@ -44,6 +50,7 @@ function ProductCard({ product }: { product: Product }) {
 						</p>
 					</div>
 					<AddToCart
+						cart={cart}
 						item={{
 							productId: product.id,
 							name: product.name,
@@ -52,6 +59,7 @@ function ProductCard({ product }: { product: Product }) {
 							image: product.images[0],
 							price: product.price,
 						}}
+						size="sm"
 						disabled={product.stock === 0}
 					/>
 				</div>

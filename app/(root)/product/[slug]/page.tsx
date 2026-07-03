@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import AddToCart from "@/components/shared/product/add-to-cart";
 import ProductImages from "@/components/shared/product/product-images";
 import { Badge } from "@/components/ui/badge";
+import { getMyCart } from "@/lib/action/cart.action";
 import { getProductBySlug } from "@/lib/action/product.action";
 import { formatCurrency } from "@/lib/utils";
 
@@ -19,6 +20,8 @@ async function ProductDetailPage({ params }: ProductDetailPageProps) {
 	if (!product) {
 		notFound();
 	}
+
+	const cart = await getMyCart();
 
 	return (
 		<section className="space-y-8">
@@ -91,6 +94,7 @@ async function ProductDetailPage({ params }: ProductDetailPageProps) {
 					</dl>
 
 					<AddToCart
+						cart={cart}
 						item={{
 							productId: product.id,
 							name: product.name,
