@@ -5,6 +5,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { signIn, signOut } from "@/auth";
 import prisma from "@/db/prisma";
+import { formatError } from "@/lib/utils";
 import { signInFormSchema, signUpFormSchema } from "@/lib/validator";
 
 type ActionResponse = {
@@ -100,7 +101,7 @@ export async function signUpUser(
 
 		return {
 			success: false,
-			message: "Could not register user",
+			message: formatError(error),
 		};
 	}
 }
