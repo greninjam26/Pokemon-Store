@@ -36,6 +36,18 @@ export type CartWithItems = Cart & {
 	createdAt: string;
 };
 
+type CartRecord = {
+	id: string;
+	userId: string | null;
+	sessionCartId: string;
+	items: unknown;
+	itemsPrice: { toString: () => string };
+	shippingPrice: { toString: () => string };
+	taxPrice: { toString: () => string };
+	totalPrice: { toString: () => string };
+	createdAt: Date;
+};
+
 function toNumber(value: { toString: () => string }) {
 	return Number(value.toString());
 }
@@ -46,7 +58,39 @@ function parseCartItems(items: unknown): CartItem[] {
 	return result.success ? result.data : [];
 }
 
-export function calcPrice(items: CartItem[]): CartPrices {
+function cartToPlainObject(cart: CartRecord): CartWithItems {
+	return {
+		id: cart.id,
+		items: parseCartItems(cart.items),
+		itemsPrice: toNumber(cart.itemsPrice),
+		shippingPrice: toNumber(cart.shippingPrice),
+		taxPrice: toNumber(cart.taxPrice),
+		totalPrice: toNumber(cart.totalPrice),
+		sessionCartId: cart.sessionCartId,
+		userId: cart.userId,
+		createdAt: cart.createdAt.toISOString(),
+	};
+}
+
+function mergeCartItems(currentItems: CartItem[], guestItems: CartItem[]) {
+	const mergedItems = [...currentItems];
+
+	for (const guestItem of guestItems) {
+		const existingItem = mergedItems.find(
+			(item) => item.productId === guestItem.productId,
+		);
+
+		if (existingItem) {
+			existingItem.qty += guestItem.qty;
+		} else {
+			mergedItems.push(guestItem);
+		}
+	}
+
+	return mergedItems;
+}
+
+function calcPrice(items: CartItem[]): CartPrices {
 	const itemsPrice = roundToTwoDecimals(
 		items.reduce((total, item) => total + item.price * item.qty, 0),
 	);
@@ -99,30 +143,60 @@ export async function getMyCart(): Promise<CartWithItems | null> {
 	const session = await auth();
 	const userId = (session?.user as { id?: string } | undefined)?.id;
 
-	const cart = await prisma.cart.findFirst({
-		where: userId
-			? {
-					OR: [{ userId }, { sessionCartId }],
-				}
-			: { sessionCartId },
+	if (!userId) {
+		const guestCart = await prisma.cart.findFirst({
+			where: {
+				sessionCartId,
+				userId: null,
+			},
+			orderBy: { createdAt: "desc" },
+		});
+
+		return guestCart ? cartToPlainObject(guestCart) : null;
+	}
+
+	const userCart = await prisma.cart.findFirst({
+		where: { userId },
+		orderBy: { createdAt: "desc" },
+	});
+	const guestCart = await prisma.cart.findFirst({
+		where: {
+			sessionCartId,
+			userId: null,
+		},
 		orderBy: { createdAt: "desc" },
 	});
 
-	if (!cart) {
-		return null;
+	if (userCart && guestCart) {
+		const mergedItems = mergeCartItems(
+			parseCartItems(userCart.items),
+			parseCartItems(guestCart.items),
+		);
+		const updatedCart = await prisma.cart.update({
+			where: { id: userCart.id },
+			data: {
+				items: mergedItems,
+				...calcPrice(mergedItems),
+			},
+		});
+
+		await prisma.cart.delete({
+			where: { id: guestCart.id },
+		});
+
+		return cartToPlainObject(updatedCart);
 	}
 
-	return {
-		id: cart.id,
-		items: parseCartItems(cart.items),
-		itemsPrice: toNumber(cart.itemsPrice),
-		shippingPrice: toNumber(cart.shippingPrice),
-		taxPrice: toNumber(cart.taxPrice),
-		totalPrice: toNumber(cart.totalPrice),
-		sessionCartId: cart.sessionCartId,
-		userId: cart.userId,
-		createdAt: cart.createdAt.toISOString(),
-	};
+	if (guestCart) {
+		const updatedCart = await prisma.cart.update({
+			where: { id: guestCart.id },
+			data: { userId },
+		});
+
+		return cartToPlainObject(updatedCart);
+	}
+
+	return userCart ? cartToPlainObject(userCart) : null;
 }
 
 export async function addItemToCart(item: CartItem): Promise<ActionResponse> {
