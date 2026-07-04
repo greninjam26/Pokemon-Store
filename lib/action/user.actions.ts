@@ -8,6 +8,8 @@ import { auth, signIn, signOut } from "@/auth";
 import prisma from "@/db/prisma";
 import { formatError } from "@/lib/utils";
 import {
+	paymentMethodSchema,
+	type PaymentMethod,
 	shippingAddressSchema,
 	type ShippingAddress,
 	signInFormSchema,
@@ -18,6 +20,16 @@ type ActionResponse = {
 	success: boolean;
 	message: string;
 };
+
+export async function getUserCheckoutInfo(userId: string) {
+	return prisma.user.findUnique({
+		where: { id: userId },
+		select: {
+			address: true,
+			paymentMethod: true,
+		},
+	});
+}
 
 export async function signInWithCredentials(
 	_previousState: unknown,
@@ -133,6 +145,40 @@ export async function updateUserAddress(
 		return {
 			success: true,
 			message: "Shipping address saved",
+		};
+	} catch (error) {
+		if (isRedirectError(error)) {
+			throw error;
+		}
+
+		return {
+			success: false,
+			message: formatError(error),
+		};
+	}
+}
+
+export async function updateUserPaymentMethod(
+	data: PaymentMethod,
+): Promise<ActionResponse> {
+	try {
+		const session = await auth();
+		const userId = (session?.user as { id?: string } | undefined)?.id;
+
+		if (!userId) {
+			redirect("/sign-in?callbackUrl=/payment-method");
+		}
+
+		const paymentMethod = paymentMethodSchema.parse(data);
+
+		await prisma.user.update({
+			where: { id: userId },
+			data: { paymentMethod: paymentMethod.type },
+		});
+
+		return {
+			success: true,
+			message: "Payment method saved",
 		};
 	} catch (error) {
 		if (isRedirectError(error)) {

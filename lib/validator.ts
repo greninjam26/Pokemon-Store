@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { PAYMENT_METHODS } from "@/lib/constant";
+
 const currencySchema = z
 	.union([z.string(), z.number()])
 	.transform((value) =>
@@ -134,3 +136,14 @@ export const shippingAddressSchema = z.object({
 });
 
 export type ShippingAddress = z.infer<typeof shippingAddressSchema>;
+
+export const paymentMethodSchema = z
+	.object({
+		type: z.string().trim().min(1, "Payment method is required"),
+	})
+	.refine((data) => PAYMENT_METHODS.includes(data.type), {
+		path: ["type"],
+		message: "Invalid payment method",
+	});
+
+export type PaymentMethod = z.infer<typeof paymentMethodSchema>;

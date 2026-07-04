@@ -1,4 +1,5 @@
 import { ArrowLeft, ShoppingCart } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { getMyCart } from "@/lib/action/cart.action";
 import { formatCurrency } from "@/lib/utils";
 import CartTable from "./cart-table";
 
-export const metadata = {
+export const metadata: Metadata = {
 	title: "Shopping Cart",
 };
 

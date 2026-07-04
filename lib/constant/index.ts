@@ -9,6 +9,11 @@ export const CART_SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 export const CART_TAX_RATE = 0.13;
 export const CART_SHIPPING_PRICE = 10;
 export const CART_FREE_SHIPPING_MIN_PRICE = 100;
+export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
+	? process.env.PAYMENT_METHODS.split(",").map((method) => method.trim())
+	: ["Credit Card", "PayPal", "Cash On Delivery"];
+export const DEFAULT_PAYMENT_METHOD =
+	process.env.DEFAULT_PAYMENT_METHOD || PAYMENT_METHODS[0];
 export const SHIPPING_ADDRESS_DEFAULT_VALUES = {
 	fullName: "",
 	streetAddress: "",

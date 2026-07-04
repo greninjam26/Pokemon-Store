@@ -14,19 +14,19 @@ import {
 } from "@/components/ui/card";
 import { getMyCart } from "@/lib/action/cart.action";
 import { getUserCheckoutInfo } from "@/lib/action/user.actions";
-import { shippingAddressSchema } from "@/lib/validator";
-import ShippingAddressForm from "./shipping-address-form";
+
+import PaymentMethodForm from "./payment-method-form";
 
 export const metadata: Metadata = {
-	title: "Shipping Address",
+	title: "Payment Method",
 };
 
-async function ShippingAddressPage() {
+async function PaymentMethodPage() {
 	const session = await auth();
 	const userId = (session?.user as { id?: string } | undefined)?.id;
 
 	if (!userId) {
-		redirect("/sign-in?callbackUrl=/shipping-address");
+		redirect("/sign-in?callbackUrl=/payment-method");
 	}
 
 	const cart = await getMyCart();
@@ -36,37 +36,38 @@ async function ShippingAddressPage() {
 	}
 
 	const user = await getUserCheckoutInfo(userId);
-	const addressResult = shippingAddressSchema
-		.partial()
-		.safeParse(user?.address ?? {});
-	const address = addressResult.success ? addressResult.data : null;
+
+	if (!user?.address) {
+		redirect("/shipping-address");
+	}
 
 	return (
 		<section className="mx-auto max-w-2xl space-y-6">
-			<CheckoutSteps currentStep="shipping" />
+			<CheckoutSteps currentStep="payment" />
 
 			<Link
-				href="/cart"
+				href="/shipping-address"
 				className="inline-flex items-center gap-2 font-semibold text-muted-foreground hover:text-foreground"
 			>
 				<ArrowLeft className="size-4" />
-				Back to cart
+				Back to shipping
 			</Link>
 
 			<Card className="rounded-lg">
 				<CardHeader>
-					<CardTitle className="text-2xl">Shipping Address</CardTitle>
+					<CardTitle className="text-2xl">Payment Method</CardTitle>
 					<CardDescription>
-						Enter the address where your Pokemon order should be
-						delivered.
+						Choose how you want to pay for your Pokemon order.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<ShippingAddressForm address={address} />
+					<PaymentMethodForm
+						preferredPaymentMethod={user.paymentMethod}
+					/>
 				</CardContent>
 			</Card>
 		</section>
 	);
 }
 
-export default ShippingAddressPage;
+export default PaymentMethodPage;
