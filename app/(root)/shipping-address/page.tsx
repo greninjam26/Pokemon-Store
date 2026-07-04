@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import CheckoutSteps from "@/components/shared/checkout/checkout-steps";
 import {
 	Card,
 	CardContent,
@@ -44,6 +45,8 @@ async function ShippingAddressPage() {
 
 	return (
 		<section className="mx-auto max-w-2xl space-y-6">
+			<CheckoutSteps currentStep="shipping" />
+
 			<Link
 				href="/cart"
 				className="inline-flex items-center gap-2 font-semibold text-muted-foreground hover:text-foreground"

@@ -5,6 +5,14 @@ import CredentialsProvider from "next-auth/providers/credentials";
 
 import prisma from "@/db/prisma";
 
+function getUserDisplayName(name: string | null, email: string | null) {
+	if (name && name !== "NO_NAME") {
+		return name;
+	}
+
+	return email?.split("@")[0] ?? "User";
+}
+
 export const authConfig = {
 	pages: {
 		signIn: "/sign-in",
@@ -47,7 +55,7 @@ export const authConfig = {
 
 				return {
 					id: user.id,
-					name: user.name,
+					name: getUserDisplayName(user.name, user.email),
 					email: user.email,
 					role: user.role,
 				};
@@ -55,9 +63,22 @@ export const authConfig = {
 		}),
 	],
 	callbacks: {
-		async jwt({ token, user }) {
+		async jwt({ token, user, trigger, session }) {
 			if (user) {
 				token.role = (user as { role?: string }).role;
+			}
+
+			if (trigger === "update") {
+				const updatedSession = session as
+					| { user?: { name?: unknown } }
+					| undefined;
+
+				if (typeof updatedSession?.user?.name === "string") {
+					token.name = getUserDisplayName(
+						updatedSession.user.name,
+						typeof token.email === "string" ? token.email : null,
+					);
+				}
 			}
 
 			return token;
