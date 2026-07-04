@@ -2,11 +2,17 @@
 
 import { hashSync } from "bcrypt-ts-edge";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { redirect } from "next/navigation";
 
-import { signIn, signOut } from "@/auth";
+import { auth, signIn, signOut } from "@/auth";
 import prisma from "@/db/prisma";
 import { formatError } from "@/lib/utils";
-import { signInFormSchema, signUpFormSchema } from "@/lib/validator";
+import {
+	shippingAddressSchema,
+	type ShippingAddress,
+	signInFormSchema,
+	signUpFormSchema,
+} from "@/lib/validator";
 
 type ActionResponse = {
 	success: boolean;
@@ -93,6 +99,40 @@ export async function signUpUser(
 		return {
 			success: true,
 			message: "User registered successfully",
+		};
+	} catch (error) {
+		if (isRedirectError(error)) {
+			throw error;
+		}
+
+		return {
+			success: false,
+			message: formatError(error),
+		};
+	}
+}
+
+export async function updateUserAddress(
+	data: ShippingAddress,
+): Promise<ActionResponse> {
+	try {
+		const session = await auth();
+		const userId = (session?.user as { id?: string } | undefined)?.id;
+
+		if (!userId) {
+			redirect("/sign-in?callbackUrl=/shipping-address");
+		}
+
+		const address = shippingAddressSchema.parse(data);
+
+		await prisma.user.update({
+			where: { id: userId },
+			data: { address },
+		});
+
+		return {
+			success: true,
+			message: "Shipping address saved",
 		};
 	} catch (error) {
 		if (isRedirectError(error)) {

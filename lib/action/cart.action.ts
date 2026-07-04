@@ -72,22 +72,44 @@ function cartToPlainObject(cart: CartRecord): CartWithItems {
 	};
 }
 
-function mergeCartItems(currentItems: CartItem[], guestItems: CartItem[]) {
-	const mergedItems = [...currentItems];
+async function mergeCartItems(currentItems: CartItem[], guestItems: CartItem[]) {
+	const itemByProductId = new Map<string, CartItem>();
 
-	for (const guestItem of guestItems) {
-		const existingItem = mergedItems.find(
-			(item) => item.productId === guestItem.productId,
-		);
+	for (const item of [...currentItems, ...guestItems]) {
+		const existingItem = itemByProductId.get(item.productId);
 
 		if (existingItem) {
-			existingItem.qty += guestItem.qty;
+			itemByProductId.set(item.productId, {
+				...existingItem,
+				qty: existingItem.qty + item.qty,
+			});
 		} else {
-			mergedItems.push(guestItem);
+			itemByProductId.set(item.productId, item);
 		}
 	}
 
-	return mergedItems;
+	const productIds = [...itemByProductId.keys()];
+	const products = await prisma.product.findMany({
+		where: {
+			id: {
+				in: productIds,
+			},
+		},
+		select: {
+			id: true,
+			stock: true,
+		},
+	});
+	const stockByProductId = new Map(
+		products.map((product) => [product.id, product.stock]),
+	);
+
+	return [...itemByProductId.values()].flatMap((item) => {
+		const stock = stockByProductId.get(item.productId) ?? 0;
+		const qty = Math.min(item.qty, stock);
+
+		return qty > 0 ? [{ ...item, qty }] : [];
+	});
 }
 
 function calcPrice(items: CartItem[]): CartPrices {
@@ -168,7 +190,7 @@ export async function getMyCart(): Promise<CartWithItems | null> {
 	});
 
 	if (userCart && guestCart) {
-		const mergedItems = mergeCartItems(
+		const mergedItems = await mergeCartItems(
 			parseCartItems(userCart.items),
 			parseCartItems(guestCart.items),
 		);
