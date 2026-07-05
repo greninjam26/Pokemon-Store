@@ -9,12 +9,11 @@ import prisma from "@/db/prisma";
 import { formatError } from "@/lib/utils";
 import {
 	paymentMethodSchema,
-	type PaymentMethod,
 	shippingAddressSchema,
-	type ShippingAddress,
 	signInFormSchema,
 	signUpFormSchema,
-} from "@/lib/validator";
+} from "@/lib/validators";
+import type { PaymentMethod, ShippingAddress } from "@/types";
 
 type ActionResponse = {
 	success: boolean;

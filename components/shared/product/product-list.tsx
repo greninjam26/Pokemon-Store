@@ -1,5 +1,5 @@
 import type { CartWithItems } from "@/lib/action/cart.action";
-import type { Product } from "@/lib/validator";
+import type { Product } from "@/types";
 import ProductCard from "./product-card";
 
 type ProductListProps = {

@@ -13,12 +13,8 @@ import {
 	CART_TAX_RATE,
 } from "@/lib/constant";
 import { formatError, roundToTwoDecimals } from "@/lib/utils";
-import {
-	cartItemSchema,
-	insertCartSchema,
-	type Cart,
-	type CartItem,
-} from "@/lib/validator";
+import { cartItemSchema, insertCartSchema } from "@/lib/validators";
+import type { Cart, CartItem } from "@/types";
 
 type ActionResponse = {
 	success: boolean;

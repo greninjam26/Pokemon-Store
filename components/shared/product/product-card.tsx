@@ -4,7 +4,7 @@ import Link from "next/link";
 import AddToCart from "@/components/shared/product/add-to-cart";
 import type { CartWithItems } from "@/lib/action/cart.action";
 import { formatCurrency } from "@/lib/utils";
-import type { Product } from "@/lib/validator";
+import type { Product } from "@/types";
 
 type ProductCardProps = Readonly<{
 	product: Product;

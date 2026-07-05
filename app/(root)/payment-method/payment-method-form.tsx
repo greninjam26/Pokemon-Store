@@ -18,8 +18,9 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DEFAULT_PAYMENT_METHOD, PAYMENT_METHODS } from "@/lib/constant";
 import { updateUserPaymentMethod } from "@/lib/action/user.actions";
-import { paymentMethodSchema, type PaymentMethod } from "@/lib/validator";
+import { paymentMethodSchema } from "@/lib/validators";
 import { cn } from "@/lib/utils";
+import type { PaymentMethod } from "@/types";
 
 type PaymentMethodFormProps = Readonly<{
 	preferredPaymentMethod?: string | null;

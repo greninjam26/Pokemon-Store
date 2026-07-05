@@ -12,7 +12,7 @@ import {
 	type CartWithItems,
 } from "@/lib/action/cart.action";
 import { cn } from "@/lib/utils";
-import type { CartItem } from "@/lib/validator";
+import type { CartItem } from "@/types";
 
 type AddToCartProps = Readonly<{
 	item: CartItem;

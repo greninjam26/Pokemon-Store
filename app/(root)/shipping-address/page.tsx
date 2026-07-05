@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { getMyCart } from "@/lib/action/cart.action";
 import { getUserCheckoutInfo } from "@/lib/action/user.actions";
-import { shippingAddressSchema } from "@/lib/validator";
+import { shippingAddressSchema } from "@/lib/validators";
 import ShippingAddressForm from "./shipping-address-form";
 
 export const metadata: Metadata = {

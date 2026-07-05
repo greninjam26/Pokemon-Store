@@ -2,7 +2,7 @@
 
 import prisma from "@/db/prisma";
 import { LATEST_PRODUCTS_LIMIT } from "@/lib/constant";
-import type { Product } from "@/lib/validator";
+import type { Product } from "@/types";
 
 const productSelect = {
 	id: true,

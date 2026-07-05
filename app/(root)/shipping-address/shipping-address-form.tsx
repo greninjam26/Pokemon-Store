@@ -19,7 +19,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { SHIPPING_ADDRESS_DEFAULT_VALUES } from "@/lib/constant";
 import { updateUserAddress } from "@/lib/action/user.actions";
-import { shippingAddressSchema, type ShippingAddress } from "@/lib/validator";
+import { shippingAddressSchema } from "@/lib/validators";
+import type { ShippingAddress } from "@/types";
 
 type ShippingAddressFormProps = Readonly<{
 	address?: Partial<ShippingAddress> | null;
