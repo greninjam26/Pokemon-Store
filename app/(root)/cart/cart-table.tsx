@@ -1,7 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import AddToCart from "@/components/shared/product/add-to-cart";
+import FadeInImage from "@/components/shared/fade-in-image";
 import { Card, CardContent } from "@/components/ui/card";
 import {
 	Table,
@@ -44,7 +44,7 @@ function CartTable({ cart }: CartTableProps) {
 											href={`/product/${item.slug}`}
 											className="relative size-20 shrink-0 overflow-hidden rounded-lg border bg-muted"
 										>
-											<Image
+											<FadeInImage
 												src={item.image}
 												alt={item.name}
 												fill

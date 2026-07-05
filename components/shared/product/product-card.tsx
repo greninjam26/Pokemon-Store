@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 
+import FadeInImage from "@/components/shared/fade-in-image";
 import AddToCart from "@/components/shared/product/add-to-cart";
 import type { CartWithItems } from "@/lib/action/cart.action";
 import { formatCurrency } from "@/lib/utils";
@@ -18,7 +18,7 @@ function ProductCard({ product, cart }: ProductCardProps) {
 				href={`/product/${product.slug}`}
 				className="relative block aspect-square bg-muted"
 			>
-				<Image
+				<FadeInImage
 					src={product.images[0]}
 					alt={product.name}
 					fill
