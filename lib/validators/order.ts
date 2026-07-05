@@ -29,6 +29,6 @@ export const insertOrderItemSchema = cartItemSchema;
 export const paymentResultSchema = z.object({
 	id: z.string().trim().min(1, "Payment id is required"),
 	status: z.string().trim().min(1, "Payment status is required"),
-	email_address: z.email("Invalid payer email address"),
+	email_address: z.email("Invalid payer email address").optional(),
 	pricePaid: currencySchema,
 });

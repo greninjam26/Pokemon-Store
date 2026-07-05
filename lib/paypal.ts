@@ -15,6 +15,23 @@ type PayPalApiError = {
 	details?: { issue?: string; description?: string }[];
 };
 
+export type PayPalCaptureResponse = {
+	id: string;
+	status: string;
+	payer?: {
+		email_address?: string;
+	};
+	purchase_units?: {
+		payments?: {
+			captures?: {
+				amount?: {
+					value?: string;
+				};
+			}[];
+		};
+	}[];
+};
+
 function getPayPalCredentials() {
 	const clientId = process.env.PAYPAL_CLIENT_ID;
 	const clientSecret = process.env.PAYPAL_APP_SECRET;
@@ -98,5 +115,5 @@ export async function capturePayPalOrder(paypalOrderId: string) {
 		},
 	);
 
-	return parsePayPalResponse(response);
+	return parsePayPalResponse<PayPalCaptureResponse>(response);
 }
