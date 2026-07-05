@@ -13,7 +13,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getOrderById } from "@/lib/action/order.action";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import { shippingAddressSchema } from "@/lib/validators";
 
 type OrderDetailsTableProps = Readonly<{
@@ -27,7 +27,7 @@ function OrderDetailsTable({ order }: OrderDetailsTableProps) {
 		<section className="space-y-6">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 				<div className="space-y-2">
-					<h1 className="h1-bold">Order {order.id.slice(-8)}</h1>
+					<h1 className="h1-bold">Order {formatId(order.id)}</h1>
 					<p className="text-base font-medium leading-7 text-muted-foreground">
 						Your order has been created. Keep this page for your
 						records.
@@ -49,7 +49,12 @@ function OrderDetailsTable({ order }: OrderDetailsTableProps) {
 								{order.paymentMethod}
 							</p>
 							{order.isPaid ? (
-								<Badge variant="secondary">Paid</Badge>
+								<Badge variant="secondary">
+									Paid
+									{order.paidAt
+										? ` at ${formatDateTime(order.paidAt)}`
+										: null}
+								</Badge>
 							) : (
 								<Badge variant="destructive">Not paid</Badge>
 							)}
@@ -72,7 +77,12 @@ function OrderDetailsTable({ order }: OrderDetailsTableProps) {
 								<p>{address.country}</p>
 							</div>
 							{order.isDelivered ? (
-								<Badge variant="secondary">Delivered</Badge>
+								<Badge variant="secondary">
+									Delivered
+									{order.deliveredAt
+										? ` at ${formatDateTime(order.deliveredAt)}`
+										: null}
+								</Badge>
 							) : (
 								<Badge variant="destructive">
 									Not delivered
