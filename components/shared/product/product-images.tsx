@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-import FadeInImage from "@/components/shared/fade-in-image";
 import { cn } from "@/lib/utils";
+import FadeInImage from "../fade-in-image";
 
 type ProductImagesProps = Readonly<{
 	images: string[];

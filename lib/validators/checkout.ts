@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { PAYMENT_METHODS } from "@/lib/constant";
+import { PAYMENT_METHODS } from "../constant";
 
 export const shippingAddressSchema = z.object({
 	fullName: z

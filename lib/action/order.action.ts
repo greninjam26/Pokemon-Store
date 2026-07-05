@@ -4,14 +4,14 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import prisma from "@/db/prisma";
-import { getMyCart } from "@/lib/action/cart.action";
-import { getUserCheckoutInfo } from "@/lib/action/user.actions";
 import { formatError } from "@/lib/utils";
 import {
 	insertOrderItemSchema,
 	insertOrderSchema,
 	shippingAddressSchema,
 } from "@/lib/validators";
+import { getMyCart } from "./cart.action";
+import { getUserCheckoutInfo } from "./user.actions";
 
 type ActionResponse = {
 	success: boolean;

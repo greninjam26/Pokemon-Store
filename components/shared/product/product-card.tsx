@@ -1,10 +1,10 @@
 import Link from "next/link";
 
-import FadeInImage from "@/components/shared/fade-in-image";
-import AddToCart from "@/components/shared/product/add-to-cart";
 import type { CartWithItems } from "@/lib/action/cart.action";
 import { formatCurrency } from "@/lib/utils";
 import type { Product } from "@/types";
+import FadeInImage from "../fade-in-image";
+import AddToCart from "./add-to-cart";
 
 type ProductCardProps = Readonly<{
 	product: Product;
