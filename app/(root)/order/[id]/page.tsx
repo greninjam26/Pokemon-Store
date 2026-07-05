@@ -22,7 +22,12 @@ async function OrderDetailsPage({ params }: OrderDetailsPageProps) {
 		notFound();
 	}
 
-	return <OrderDetailsTable order={order} />;
+	return (
+		<OrderDetailsTable
+			order={order}
+			paypalClientId={process.env.PAYPAL_CLIENT_ID || "sb"}
+		/>
+	);
 }
 
 export default OrderDetailsPage;

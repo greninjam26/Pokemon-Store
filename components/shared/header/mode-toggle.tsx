@@ -2,6 +2,7 @@
 
 import { Moon, Sun, SunMoon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,9 +17,18 @@ import { cn } from "@/lib/utils";
 
 function ModeToggle({ className }: { className?: string }) {
 	const { setTheme, theme } = useTheme();
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
 
 	const ThemeIcon =
-		theme === "light" ? Sun : theme === "dark" ? Moon : SunMoon;
+		mounted && theme === "light"
+			? Sun
+			: mounted && theme === "dark"
+				? Moon
+				: SunMoon;
 
 	return (
 		<DropdownMenu>

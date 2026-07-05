@@ -13,15 +13,21 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getOrderById } from "@/lib/action/order.action";
+import { PAYPAL_CURRENCY_CODE } from "@/lib/constant";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import { shippingAddressSchema } from "@/lib/validators";
+import PayPalPayment from "./paypal-payment";
 
 type OrderDetailsTableProps = Readonly<{
 	order: NonNullable<Awaited<ReturnType<typeof getOrderById>>>;
+	paypalClientId: string;
 }>;
 
-function OrderDetailsTable({ order }: OrderDetailsTableProps) {
+function OrderDetailsTable({ order, paypalClientId }: OrderDetailsTableProps) {
 	const address = shippingAddressSchema.parse(order.shippingAddress);
+	const shouldShowPayPal =
+		!order.isPaid &&
+		order.paymentMethod.trim().toLowerCase() === "paypal";
 
 	return (
 		<section className="space-y-6">
@@ -58,6 +64,13 @@ function OrderDetailsTable({ order }: OrderDetailsTableProps) {
 							) : (
 								<Badge variant="destructive">Not paid</Badge>
 							)}
+							{shouldShowPayPal ? (
+								<PayPalPayment
+									orderId={order.id}
+									paypalClientId={paypalClientId}
+									currencyCode={PAYPAL_CURRENCY_CODE}
+								/>
+							) : null}
 						</CardContent>
 					</Card>
 
@@ -189,6 +202,16 @@ function OrderDetailsTable({ order }: OrderDetailsTableProps) {
 								{formatCurrency(order.totalPrice)}
 							</span>
 						</div>
+						{!shouldShowPayPal && !order.isPaid ? (
+							<div className="rounded-lg border bg-muted/40 p-4 text-sm font-medium leading-6 text-muted-foreground">
+								This order was placed with{" "}
+								<span className="font-bold text-foreground">
+									{order.paymentMethod}
+								</span>
+								. Payment options can be changed before placing
+								a new order.
+							</div>
+						) : null}
 					</CardContent>
 				</Card>
 			</div>
