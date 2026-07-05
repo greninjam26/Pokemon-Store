@@ -7,6 +7,7 @@ import type {
 	insertOrderSchema,
 	insertProductSchema,
 	paymentMethodSchema,
+	paymentResultSchema,
 	shippingAddressSchema,
 	signInFormSchema,
 	signUpFormSchema,
@@ -29,6 +30,8 @@ export type ShippingAddress = z.infer<typeof shippingAddressSchema>;
 export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 
 export type OrderItem = z.infer<typeof insertOrderItemSchema>;
+
+export type PaymentResult = z.infer<typeof paymentResultSchema>;
 
 export type Order = z.infer<typeof insertOrderSchema> & {
 	id: string;

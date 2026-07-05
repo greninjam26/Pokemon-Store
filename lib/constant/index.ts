@@ -14,6 +14,7 @@ export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
 	: ["Credit Card", "PayPal", "Cash On Delivery"];
 export const DEFAULT_PAYMENT_METHOD =
 	process.env.DEFAULT_PAYMENT_METHOD || PAYMENT_METHODS[0];
+export const PAYPAL_CURRENCY_CODE = "CAD";
 export const SHIPPING_ADDRESS_DEFAULT_VALUES = {
 	fullName: "",
 	streetAddress: "",
