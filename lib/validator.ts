@@ -147,3 +147,39 @@ export const paymentMethodSchema = z
 	});
 
 export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
+
+export const insertOrderSchema = z.object({
+	userId: z.uuid("User id must be a valid UUID"),
+	shippingAddress: shippingAddressSchema,
+	paymentMethod: z
+		.string()
+		.trim()
+		.min(1, "Payment method is required")
+		.refine(
+			(value) => PAYMENT_METHODS.includes(value),
+			"Invalid payment method",
+		),
+	itemsPrice: currencySchema,
+	shippingPrice: currencySchema,
+	taxPrice: currencySchema,
+	totalPrice: currencySchema,
+});
+
+export type Order = z.infer<typeof insertOrderSchema> & {
+	id: string;
+	createdAt: Date;
+	updatedAt: Date;
+	isPaid: boolean;
+	paidAt: Date | null;
+	isDelivered: boolean;
+	deliveredAt: Date | null;
+	orderItems: OrderItem[];
+	user?: {
+		name: string;
+		email: string | null;
+	};
+};
+
+export const insertOrderItemSchema = cartItemSchema;
+
+export type OrderItem = z.infer<typeof insertOrderItemSchema>;
