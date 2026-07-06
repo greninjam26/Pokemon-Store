@@ -1,4 +1,4 @@
-import { History, LogOut, UserIcon } from "lucide-react";
+import { History, LayoutDashboard, LogOut, UserIcon } from "lucide-react";
 import Link from "next/link";
 
 import { auth } from "@/auth";
@@ -80,6 +80,14 @@ async function UserButton({ className }: UserButtonProps) {
 						Order History
 					</Link>
 				</DropdownMenuItem>
+				{role === "admin" ? (
+					<DropdownMenuItem asChild>
+						<Link href="/admin">
+							<LayoutDashboard />
+							Admin
+						</Link>
+					</DropdownMenuItem>
+				) : null}
 				<form action={signOutUser}>
 					<DropdownMenuItem asChild>
 						<button type="submit" className="w-full">
