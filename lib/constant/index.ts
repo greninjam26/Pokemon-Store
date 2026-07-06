@@ -4,6 +4,7 @@ export const APP_DESCRIPTION =
 export const SERVER_URL =
 	process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 export const LATEST_PRODUCTS_LIMIT = 4;
+export const ADMIN_PRODUCTS_PAGE_SIZE = 10;
 export const ORDER_HISTORY_PAGE_SIZE = 5;
 export const MIN_ORDER_HISTORY_PAGE_SIZE = 1;
 export const MAX_ORDER_HISTORY_PAGE_SIZE = 20;
