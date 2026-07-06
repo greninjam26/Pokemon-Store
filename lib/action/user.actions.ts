@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { auth, signIn, signOut, updateSession } from "@/auth";
 import prisma from "@/db/prisma";
+import { ADMIN_USERS_PAGE_SIZE } from "@/lib/constant";
 import { formatError } from "@/lib/utils";
 import {
 	paymentMethodSchema,
@@ -20,6 +21,12 @@ type ActionResponse = {
 	success: boolean;
 	message: string;
 };
+
+async function getCurrentUserRole() {
+	const session = await auth();
+
+	return (session?.user as { role?: string } | undefined)?.role;
+}
 
 export async function getUserProfile() {
 	const session = await auth();
@@ -57,6 +64,77 @@ export async function getUserCheckoutInfo(userId: string) {
 			paymentMethod: true,
 		},
 	});
+}
+
+export async function getAdminUsers({
+	limit = ADMIN_USERS_PAGE_SIZE,
+	page = 1,
+	query = "",
+}: {
+	limit?: number;
+	page?: number;
+	query?: string;
+} = {}) {
+	const role = await getCurrentUserRole();
+
+	if (role !== "admin") {
+		throw new Error("User is not authorized");
+	}
+
+	const currentPage = Math.max(1, page);
+	const pageSize = Math.max(1, limit);
+	const trimmedQuery = query.trim();
+	const where = trimmedQuery
+		? {
+				OR: [
+					{
+						name: {
+							contains: trimmedQuery,
+							mode: "insensitive" as const,
+						},
+					},
+					{
+						email: {
+							contains: trimmedQuery,
+							mode: "insensitive" as const,
+						},
+					},
+				],
+			}
+		: {};
+
+	const [users, userCount] = await prisma.$transaction([
+		prisma.user.findMany({
+			where,
+			orderBy: {
+				createdAt: "desc",
+			},
+			take: pageSize,
+			skip: (currentPage - 1) * pageSize,
+			select: {
+				id: true,
+				name: true,
+				email: true,
+				role: true,
+				createdAt: true,
+				_count: {
+					select: {
+						orders: true,
+					},
+				},
+			},
+		}),
+		prisma.user.count({ where }),
+	]);
+
+	return {
+		data: users.map((user) => ({
+			...user,
+			orderCount: user._count.orders,
+		})),
+		totalPages: Math.ceil(userCount / pageSize),
+		totalUsers: userCount,
+	};
 }
 
 export async function signInWithCredentials(
