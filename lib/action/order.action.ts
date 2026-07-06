@@ -442,6 +442,121 @@ export async function getAdminOrders({
 	};
 }
 
+export async function getOrderSummary() {
+	const role = await getCurrentUserRole();
+
+	if (role !== "admin") {
+		throw new Error("User is not authorized");
+	}
+
+	const [
+		ordersCount,
+		productsCount,
+		usersCount,
+		paidSales,
+		pendingOrdersCount,
+		lowStockProductsCount,
+		latestOrders,
+		lowStockProducts,
+		recentUsers,
+	] = await prisma.$transaction([
+		prisma.order.count(),
+		prisma.product.count(),
+		prisma.user.count(),
+		prisma.order.aggregate({
+			where: {
+				isPaid: true,
+			},
+			_sum: {
+				totalPrice: true,
+			},
+		}),
+		prisma.order.count({
+			where: {
+				OR: [
+					{
+						isPaid: false,
+					},
+					{
+						isDelivered: false,
+					},
+				],
+			},
+		}),
+		prisma.product.count({
+			where: {
+				stock: {
+					lte: 5,
+				},
+			},
+		}),
+		prisma.order.findMany({
+			orderBy: {
+				createdAt: "desc",
+			},
+			take: 6,
+			select: {
+				id: true,
+				totalPrice: true,
+				isPaid: true,
+				isDelivered: true,
+				createdAt: true,
+				user: {
+					select: {
+						name: true,
+						email: true,
+					},
+				},
+			},
+		}),
+		prisma.product.findMany({
+			where: {
+				stock: {
+					lte: 5,
+				},
+			},
+			orderBy: {
+				stock: "asc",
+			},
+			take: 5,
+			select: {
+				id: true,
+				name: true,
+				slug: true,
+				stock: true,
+			},
+		}),
+		prisma.user.findMany({
+			orderBy: {
+				createdAt: "desc",
+			},
+			take: 5,
+			select: {
+				id: true,
+				name: true,
+				email: true,
+				role: true,
+				createdAt: true,
+			},
+		}),
+	]);
+
+	return {
+		ordersCount,
+		productsCount,
+		usersCount,
+		totalSales: decimalToNumber(paidSales._sum.totalPrice ?? 0),
+		pendingOrdersCount,
+		lowStockProductsCount,
+		latestOrders: latestOrders.map((order) => ({
+			...order,
+			totalPrice: decimalToNumber(order.totalPrice),
+		})),
+		lowStockProducts,
+		recentUsers,
+	};
+}
+
 export async function createPayPalOrder(
 	orderId: string,
 ): Promise<ActionResponse> {
