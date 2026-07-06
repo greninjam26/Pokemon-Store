@@ -1,6 +1,9 @@
 import { Search } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
+import Pagination from "@/components/shared/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,107 +16,189 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { getAdminOrders } from "@/lib/action/order.action";
+import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 
 export const metadata: Metadata = {
 	title: "Admin Orders",
 };
 
-const orders = [
-	{
-		id: "...f3ae67fd",
-		customer: "Ash",
-		date: "Jul 5, 2026",
-		total: "$17.33",
-		payment: "Paid",
-		delivery: "Not delivered",
-	},
-	{
-		id: "...e6789873",
-		customer: "Liko",
-		date: "Jul 5, 2026",
-		total: "$38.24",
-		payment: "Not paid",
-		delivery: "Not delivered",
-	},
-	{
-		id: "...474f67a2",
-		customer: "Professor Oak",
-		date: "Jul 4, 2026",
-		total: "$451.99",
-		payment: "Paid",
-		delivery: "Delivered",
-	},
-];
+type AdminOrdersPageProps = Readonly<{
+	searchParams: Promise<{
+		page?: string;
+		query?: string;
+	}>;
+}>;
 
-function AdminOrdersPage() {
+function getCustomerName(order: {
+	user: {
+		name: string;
+		email: string | null;
+	};
+}) {
+	if (order.user.name && order.user.name !== "NO_NAME") {
+		return order.user.name;
+	}
+
+	return order.user.email ?? "Customer";
+}
+
+async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
+	const { page, query } = await searchParams;
+	const currentPage = Math.max(1, Number(page) || 1);
+	const searchQuery = query?.trim() ?? "";
+	const orders = await getAdminOrders({
+		page: currentPage,
+		query: searchQuery,
+	});
+
+	if (orders.totalPages > 0 && currentPage > orders.totalPages) {
+		const params = new URLSearchParams();
+
+		if (searchQuery) {
+			params.set("query", searchQuery);
+		}
+
+		params.set("page", orders.totalPages.toString());
+		redirect(`/admin/orders?${params.toString()}`);
+	}
+
 	return (
 		<Card className="rounded-lg">
 			<CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<CardTitle>Orders</CardTitle>
-				<div className="relative">
-					<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-					<Input
-						placeholder="Search orders"
-						className="h-10 pl-9 sm:w-64"
-						disabled
-					/>
+				<div className="space-y-1">
+					<CardTitle>Orders</CardTitle>
+					<p className="text-sm font-medium text-muted-foreground">
+						{orders.totalOrders} order
+						{orders.totalOrders === 1 ? "" : "s"} found
+					</p>
+				</div>
+				<div className="flex flex-col gap-2 md:flex-row">
+					<form className="flex gap-2" action="/admin/orders">
+						<div className="relative">
+							<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+							<Input
+								name="query"
+								placeholder="Search orders"
+								className="h-10 pl-9 sm:w-64"
+								defaultValue={searchQuery}
+							/>
+						</div>
+						<Button type="submit" variant="outline">
+							Search
+						</Button>
+					</form>
+					{searchQuery ? (
+						<Button asChild variant="ghost">
+							<Link href="/admin/orders">Clear</Link>
+						</Button>
+					) : null}
 				</div>
 			</CardHeader>
 			<CardContent className="p-0">
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Order</TableHead>
-							<TableHead>Customer</TableHead>
-							<TableHead>Date</TableHead>
-							<TableHead>Total</TableHead>
-							<TableHead>Payment</TableHead>
-							<TableHead>Delivery</TableHead>
-							<TableHead className="text-right">Actions</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{orders.map((order) => (
-							<TableRow key={order.id}>
-								<TableCell className="font-bold">
-									{order.id}
-								</TableCell>
-								<TableCell>{order.customer}</TableCell>
-								<TableCell>{order.date}</TableCell>
-								<TableCell className="font-bold">
-									{order.total}
-								</TableCell>
-								<TableCell>
-									<Badge
-										variant={
-											order.payment === "Paid"
-												? "secondary"
-												: "destructive"
-										}
-									>
-										{order.payment}
-									</Badge>
-								</TableCell>
-								<TableCell>
-									<Badge
-										variant={
-											order.delivery === "Delivered"
-												? "secondary"
-												: "destructive"
-										}
-									>
-										{order.delivery}
-									</Badge>
-								</TableCell>
-								<TableCell className="text-right">
-									<Button variant="outline" size="sm" disabled>
-										View
-									</Button>
-								</TableCell>
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
+				{orders.data.length === 0 ? (
+					<div className="grid min-h-64 place-items-center border-t p-8 text-center">
+						<div className="space-y-2">
+							<p className="text-lg font-black">
+								No orders found
+							</p>
+							<p className="text-sm font-medium text-muted-foreground">
+								Try a different search term or clear the
+								filter.
+							</p>
+						</div>
+					</div>
+				) : (
+					<div className="overflow-x-auto">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Order</TableHead>
+									<TableHead>Customer</TableHead>
+									<TableHead>Date</TableHead>
+									<TableHead>Total</TableHead>
+									<TableHead>Payment</TableHead>
+									<TableHead>Delivery</TableHead>
+									<TableHead className="text-right">
+										Actions
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{orders.data.map((order) => (
+									<TableRow key={order.id}>
+										<TableCell className="font-bold">
+											{formatId(order.id)}
+										</TableCell>
+										<TableCell>
+											<div className="min-w-48">
+												<p className="font-bold">
+													{getCustomerName(order)}
+												</p>
+												{order.user.email ? (
+													<p className="text-xs font-medium text-muted-foreground">
+														{order.user.email}
+													</p>
+												) : null}
+											</div>
+										</TableCell>
+										<TableCell className="min-w-36">
+											{formatDateTime(order.createdAt)}
+										</TableCell>
+										<TableCell className="font-bold">
+											{formatCurrency(order.totalPrice)}
+										</TableCell>
+										<TableCell>
+											<div className="flex flex-col gap-1">
+												<Badge
+													variant={
+														order.isPaid
+															? "secondary"
+															: "destructive"
+													}
+												>
+													{order.isPaid
+														? "Paid"
+														: "Not paid"}
+												</Badge>
+												<span className="text-xs font-medium text-muted-foreground">
+													{order.paymentMethod}
+												</span>
+											</div>
+										</TableCell>
+										<TableCell>
+											<Badge
+												variant={
+													order.isDelivered
+														? "secondary"
+														: "destructive"
+												}
+											>
+												{order.isDelivered
+													? "Delivered"
+													: "Not delivered"}
+											</Badge>
+										</TableCell>
+										<TableCell className="text-right">
+											<Button
+												asChild
+												variant="outline"
+												size="sm"
+											>
+												<Link
+													href={`/order/${order.id}`}
+												>
+													View
+												</Link>
+											</Button>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</div>
+				)}
+				<Pagination page={currentPage} totalPages={orders.totalPages} />
 			</CardContent>
 		</Card>
 	);

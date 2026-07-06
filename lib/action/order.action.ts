@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import prisma from "@/db/prisma";
 import {
+	ADMIN_ORDERS_PAGE_SIZE,
 	MAX_ORDER_HISTORY_PAGE_SIZE,
 	MIN_ORDER_HISTORY_PAGE_SIZE,
 	ORDER_HISTORY_PAGE_SIZE,
@@ -37,6 +38,12 @@ function decimalToNumber(value: { toString: () => string }) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
+}
+
+function isUuid(value: string) {
+	return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+		value,
+	);
 }
 
 async function updateOrderToPaid({
@@ -81,6 +88,12 @@ async function getCurrentUserId() {
 	const session = await auth();
 
 	return (session?.user as { id?: string } | undefined)?.id;
+}
+
+async function getCurrentUserRole() {
+	const session = await auth();
+
+	return (session?.user as { role?: string } | undefined)?.role;
 }
 
 export async function createOrder(): Promise<ActionResponse> {
@@ -230,17 +243,24 @@ export async function createOrder(): Promise<ActionResponse> {
 }
 
 export async function getOrderById(orderId: string) {
-	const userId = await getCurrentUserId();
+	const session = await auth();
+	const userId = (session?.user as { id?: string } | undefined)?.id;
+	const role = (session?.user as { role?: string } | undefined)?.role;
 
 	if (!userId) {
 		return null;
 	}
 
 	const order = await prisma.order.findFirst({
-		where: {
-			id: orderId,
-			userId,
-		},
+		where:
+			role === "admin"
+				? {
+						id: orderId,
+					}
+				: {
+						id: orderId,
+						userId,
+					},
 		include: {
 			orderItems: true,
 			user: {
@@ -330,6 +350,95 @@ export async function getMyOrders({
 			totalPrice: decimalToNumber(order.totalPrice),
 		})),
 		totalPages: Math.ceil(orderCount / pageSize),
+	};
+}
+
+export async function getAdminOrders({
+	limit = ADMIN_ORDERS_PAGE_SIZE,
+	page = 1,
+	query = "",
+}: {
+	limit?: number;
+	page?: number;
+	query?: string;
+} = {}) {
+	const role = await getCurrentUserRole();
+
+	if (role !== "admin") {
+		throw new Error("User is not authorized");
+	}
+
+	const currentPage = Math.max(1, page);
+	const pageSize = Math.max(1, limit);
+	const trimmedQuery = query.trim();
+	const queryFilters = [
+		...(isUuid(trimmedQuery)
+			? [
+					{
+						id: {
+							equals: trimmedQuery,
+						},
+					},
+				]
+			: []),
+		{
+			user: {
+				name: {
+					contains: trimmedQuery,
+					mode: "insensitive" as const,
+				},
+			},
+		},
+		{
+			user: {
+				email: {
+					contains: trimmedQuery,
+					mode: "insensitive" as const,
+				},
+			},
+		},
+	];
+	const where = trimmedQuery
+		? {
+				OR: queryFilters,
+			}
+		: {};
+
+	const [orders, orderCount] = await prisma.$transaction([
+		prisma.order.findMany({
+			where,
+			orderBy: {
+				createdAt: "desc",
+			},
+			take: pageSize,
+			skip: (currentPage - 1) * pageSize,
+			select: {
+				id: true,
+				createdAt: true,
+				totalPrice: true,
+				paymentMethod: true,
+				isPaid: true,
+				paidAt: true,
+				isDelivered: true,
+				deliveredAt: true,
+				user: {
+					select: {
+						name: true,
+						email: true,
+					},
+				},
+			},
+		}),
+		prisma.order.count({ where }),
+	]);
+
+	return {
+		data: orders.map((order) => ({
+			...order,
+			totalPrice: decimalToNumber(order.totalPrice),
+		})),
+		totalPages: Math.ceil(orderCount / pageSize),
+		totalOrders: orderCount,
 	};
 }
 

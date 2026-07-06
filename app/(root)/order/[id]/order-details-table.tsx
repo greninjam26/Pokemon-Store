@@ -20,10 +20,15 @@ import PayPalPayment from "./paypal-payment";
 
 type OrderDetailsTableProps = Readonly<{
 	order: NonNullable<Awaited<ReturnType<typeof getOrderById>>>;
+	isAdmin?: boolean;
 	paypalClientId: string;
 }>;
 
-function OrderDetailsTable({ order, paypalClientId }: OrderDetailsTableProps) {
+function OrderDetailsTable({
+	order,
+	isAdmin = false,
+	paypalClientId,
+}: OrderDetailsTableProps) {
 	const address = shippingAddressSchema.parse(order.shippingAddress);
 	const shouldShowPayPal =
 		!order.isPaid &&
@@ -40,6 +45,13 @@ function OrderDetailsTable({ order, paypalClientId }: OrderDetailsTableProps) {
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
+					{isAdmin ? (
+						<Button variant="outline" asChild>
+							<Link href="/admin/orders">
+								Back to Admin Orders
+							</Link>
+						</Button>
+					) : null}
 					<Button variant="outline" asChild>
 						<Link href="/account/orders">Order History</Link>
 					</Button>

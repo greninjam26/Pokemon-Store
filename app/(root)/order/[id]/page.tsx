@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { auth } from "@/auth";
 import { getOrderById } from "@/lib/action/order.action";
 import OrderDetailsTable from "./order-details-table";
 
@@ -16,6 +17,9 @@ type OrderDetailsPageProps = Readonly<{
 
 async function OrderDetailsPage({ params }: OrderDetailsPageProps) {
 	const { id } = await params;
+	const session = await auth();
+	const isAdmin =
+		(session?.user as { role?: string } | undefined)?.role === "admin";
 	const order = await getOrderById(id);
 
 	if (!order) {
@@ -25,6 +29,7 @@ async function OrderDetailsPage({ params }: OrderDetailsPageProps) {
 	return (
 		<OrderDetailsTable
 			order={order}
+			isAdmin={isAdmin}
 			paypalClientId={process.env.PAYPAL_CLIENT_ID || "sb"}
 		/>
 	);
