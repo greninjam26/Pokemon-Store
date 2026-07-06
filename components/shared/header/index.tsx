@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { APP_NAME } from "@/lib/constant";
+import AccountNav from "./account-nav";
 import Menu from "./menu";
 
 function Header() {
@@ -21,6 +22,7 @@ function Header() {
 							{APP_NAME}
 						</span>
 					</Link>
+					<AccountNav />
 				</div>
 				<Menu />
 			</div>

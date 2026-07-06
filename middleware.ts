@@ -12,6 +12,7 @@ const protectedRoutes = [
 	"/place-order",
 	"/profile",
 	"/user",
+	"/account",
 	"/order",
 	"/orders",
 ];

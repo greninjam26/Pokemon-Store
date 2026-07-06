@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import prisma from "@/db/prisma";
+import { ORDER_HISTORY_PAGE_SIZE } from "@/lib/constant";
 import {
 	capturePayPalOrder as capturePayPalApiOrder,
 	createPayPalOrder as createPayPalApiOrder,
@@ -261,6 +262,57 @@ export async function getOrderById(orderId: string) {
 			...item,
 			price: decimalToNumber(item.price),
 		})),
+	};
+}
+
+export async function getMyOrders({
+	limit = ORDER_HISTORY_PAGE_SIZE,
+	page = 1,
+}: {
+	limit?: number;
+	page?: number;
+} = {}) {
+	const userId = await getCurrentUserId();
+
+	if (!userId) {
+		return {
+			data: [],
+			totalPages: 0,
+		};
+	}
+
+	const currentPage = Math.max(1, page);
+	const pageSize = Math.max(1, limit);
+
+	const where = { userId };
+	const [orders, orderCount] = await prisma.$transaction([
+		prisma.order.findMany({
+			where,
+			orderBy: {
+				createdAt: "desc",
+			},
+			take: pageSize,
+			skip: (currentPage - 1) * pageSize,
+			select: {
+				id: true,
+				createdAt: true,
+				totalPrice: true,
+				paymentMethod: true,
+				isPaid: true,
+				paidAt: true,
+				isDelivered: true,
+				deliveredAt: true,
+			},
+		}),
+		prisma.order.count({ where }),
+	]);
+
+	return {
+		data: orders.map((order) => ({
+			...order,
+			totalPrice: decimalToNumber(order.totalPrice),
+		})),
+		totalPages: Math.ceil(orderCount / pageSize),
 	};
 }
 

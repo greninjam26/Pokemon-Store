@@ -1,4 +1,4 @@
-import { LogOut, UserIcon } from "lucide-react";
+import { History, LogOut, UserIcon } from "lucide-react";
 import Link from "next/link";
 
 import { auth } from "@/auth";
@@ -68,6 +68,12 @@ async function UserButton({ className }: UserButtonProps) {
 					) : null}
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
+				<DropdownMenuItem asChild>
+					<Link href="/account/orders">
+						<History />
+						Order History
+					</Link>
+				</DropdownMenuItem>
 				<form action={signOutUser}>
 					<DropdownMenuItem asChild>
 						<button type="submit" className="w-full">
