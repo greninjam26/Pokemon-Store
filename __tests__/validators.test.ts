@@ -4,6 +4,7 @@ import {
 	paymentMethodSchema,
 	paymentResultSchema,
 	shippingAddressSchema,
+	userProfileSchema,
 } from "@/lib/validators";
 
 const productId = "16d184c1-6838-4e06-9c8c-ded5181a32e3";
@@ -57,6 +58,36 @@ describe("validators", () => {
 			fullName: "Ash Ketchum",
 			country: "Canada",
 		});
+	});
+
+	it("allows profile updates without changing the password", () => {
+		expect(
+			userProfileSchema.parse({
+				name: "Ash Ketchum",
+				orderHistoryPageSize: 5,
+				currentPassword: "",
+				password: "",
+				confirmPassword: "",
+			}),
+		).toEqual({
+			name: "Ash Ketchum",
+			orderHistoryPageSize: 5,
+			currentPassword: undefined,
+			password: undefined,
+			confirmPassword: undefined,
+		});
+	});
+
+	it("requires the current password when changing profile password", () => {
+		expect(() =>
+			userProfileSchema.parse({
+				name: "Ash Ketchum",
+				orderHistoryPageSize: 5,
+				currentPassword: "",
+				password: "newpassword",
+				confirmPassword: "newpassword",
+			}),
+		).toThrow("Current password is required");
 	});
 
 	it("allows PayPal payment results without payer email", () => {

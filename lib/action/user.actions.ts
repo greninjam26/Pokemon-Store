@@ -1,10 +1,10 @@
 "use server";
 
-import { hashSync } from "bcrypt-ts-edge";
+import { compareSync, hashSync } from "bcrypt-ts-edge";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 
-import { auth, signIn, signOut } from "@/auth";
+import { auth, signIn, signOut, updateSession } from "@/auth";
 import prisma from "@/db/prisma";
 import { formatError } from "@/lib/utils";
 import {
@@ -12,13 +12,42 @@ import {
 	shippingAddressSchema,
 	signInFormSchema,
 	signUpFormSchema,
+	userProfileSchema,
 } from "@/lib/validators";
-import type { PaymentMethod, ShippingAddress } from "@/types";
+import type { PaymentMethod, ShippingAddress, UserProfile } from "@/types";
 
 type ActionResponse = {
 	success: boolean;
 	message: string;
 };
+
+export async function getUserProfile() {
+	const session = await auth();
+	const userId = (session?.user as { id?: string } | undefined)?.id;
+
+	if (!userId) {
+		redirect("/sign-in?callbackUrl=/account/profile");
+	}
+
+	const user = await prisma.user.findUnique({
+		where: { id: userId },
+		select: {
+			name: true,
+			email: true,
+			orderHistoryPageSize: true,
+		},
+	});
+
+	if (!user) {
+		redirect("/sign-in?callbackUrl=/account/profile");
+	}
+
+	return {
+		name: user.name === "NO_NAME" ? "" : user.name,
+		email: user.email ?? "",
+		orderHistoryPageSize: user.orderHistoryPageSize,
+	};
+}
 
 export async function getUserCheckoutInfo(userId: string) {
 	return prisma.user.findUnique({
@@ -178,6 +207,89 @@ export async function updateUserPaymentMethod(
 		return {
 			success: true,
 			message: "Payment method saved",
+		};
+	} catch (error) {
+		if (isRedirectError(error)) {
+			throw error;
+		}
+
+		return {
+			success: false,
+			message: formatError(error),
+		};
+	}
+}
+
+export async function updateUserProfile(
+	data: UserProfile,
+): Promise<ActionResponse> {
+	try {
+		const session = await auth();
+		const userId = (session?.user as { id?: string } | undefined)?.id;
+
+		if (!userId) {
+			redirect("/sign-in?callbackUrl=/account/profile");
+		}
+
+		const profile = userProfileSchema.parse(data);
+		const currentUser = await prisma.user.findUnique({
+			where: { id: userId },
+			select: {
+				email: true,
+				password: true,
+			},
+		});
+
+		if (!currentUser) {
+			return {
+				success: false,
+				message: "User not found",
+			};
+		}
+
+		const updateData: {
+			name: string;
+			orderHistoryPageSize: number;
+			password?: string;
+		} = {
+			name: profile.name,
+			orderHistoryPageSize: profile.orderHistoryPageSize,
+		};
+
+		if (profile.password) {
+			if (
+				!profile.currentPassword ||
+				!currentUser.password ||
+				!compareSync(profile.currentPassword, currentUser.password)
+			) {
+				return {
+					success: false,
+					message: "Current password is incorrect",
+				};
+			}
+
+			updateData.password = hashSync(profile.password, 10);
+		}
+
+		const updatedUser = await prisma.user.update({
+			where: { id: userId },
+			data: updateData,
+			select: {
+				name: true,
+				email: true,
+			},
+		});
+
+		await updateSession({
+			user: {
+				name: updatedUser.name,
+				email: updatedUser.email ?? undefined,
+			},
+		});
+
+		return {
+			success: true,
+			message: "Profile updated",
 		};
 	} catch (error) {
 		if (isRedirectError(error)) {

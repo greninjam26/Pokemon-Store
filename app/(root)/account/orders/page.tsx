@@ -51,6 +51,16 @@ async function AccountOrdersPage({ searchParams }: AccountOrdersPageProps) {
 				<p className="text-base font-medium leading-7 text-muted-foreground">
 					Review your recent orders and payment status.
 				</p>
+				<p className="text-sm font-medium leading-6 text-muted-foreground">
+					You can change how many orders appear per page in your{" "}
+					<Link
+						href="/account/profile"
+						className="font-bold text-primary hover:underline"
+					>
+						profile
+					</Link>
+					.
+				</p>
 			</div>
 
 			{orders.data.length === 0 ? (

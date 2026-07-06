@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import prisma from "@/db/prisma";
-import { ORDER_HISTORY_PAGE_SIZE } from "@/lib/constant";
+import {
+	MAX_ORDER_HISTORY_PAGE_SIZE,
+	MIN_ORDER_HISTORY_PAGE_SIZE,
+	ORDER_HISTORY_PAGE_SIZE,
+} from "@/lib/constant";
 import {
 	capturePayPalOrder as capturePayPalApiOrder,
 	createPayPalOrder as createPayPalApiOrder,
@@ -266,7 +270,7 @@ export async function getOrderById(orderId: string) {
 }
 
 export async function getMyOrders({
-	limit = ORDER_HISTORY_PAGE_SIZE,
+	limit,
 	page = 1,
 }: {
 	limit?: number;
@@ -282,7 +286,20 @@ export async function getMyOrders({
 	}
 
 	const currentPage = Math.max(1, page);
-	const pageSize = Math.max(1, limit);
+	const user = await prisma.user.findUnique({
+		where: { id: userId },
+		select: {
+			orderHistoryPageSize: true,
+		},
+	});
+	const requestedPageSize = limit ?? user?.orderHistoryPageSize;
+	const pageSize = Math.min(
+		MAX_ORDER_HISTORY_PAGE_SIZE,
+		Math.max(
+			MIN_ORDER_HISTORY_PAGE_SIZE,
+			requestedPageSize ?? ORDER_HISTORY_PAGE_SIZE,
+		),
+	);
 
 	const where = { userId };
 	const [orders, orderCount] = await prisma.$transaction([

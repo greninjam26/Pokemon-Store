@@ -4,8 +4,9 @@ export const APP_DESCRIPTION =
 export const SERVER_URL =
 	process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
 export const LATEST_PRODUCTS_LIMIT = 4;
-export const ORDER_HISTORY_PAGE_SIZE =
-	Number(process.env.ORDER_HISTORY_PAGE_SIZE) || 5;
+export const ORDER_HISTORY_PAGE_SIZE = 5;
+export const MIN_ORDER_HISTORY_PAGE_SIZE = 1;
+export const MAX_ORDER_HISTORY_PAGE_SIZE = 20;
 export const CART_SESSION_COOKIE_NAME = "sessionCartId";
 export const CART_SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 export const CART_TAX_RATE = 0.13;

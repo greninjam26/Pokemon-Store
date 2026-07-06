@@ -69,6 +69,12 @@ async function UserButton({ className }: UserButtonProps) {
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem asChild>
+					<Link href="/account/profile">
+						<UserIcon />
+						Profile
+					</Link>
+				</DropdownMenuItem>
+				<DropdownMenuItem asChild>
 					<Link href="/account/orders">
 						<History />
 						Order History

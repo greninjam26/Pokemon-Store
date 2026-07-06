@@ -7,6 +7,10 @@ import { cn } from "@/lib/utils";
 
 const accountLinks = [
 	{
+		href: "/account/profile",
+		label: "Profile",
+	},
+	{
 		href: "/account/orders",
 		label: "Orders",
 	},

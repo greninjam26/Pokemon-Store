@@ -70,7 +70,7 @@ export const authConfig = {
 
 			if (trigger === "update") {
 				const updatedSession = session as
-					| { user?: { name?: unknown } }
+					| { user?: { name?: unknown; email?: unknown } }
 					| undefined;
 
 				if (typeof updatedSession?.user?.name === "string") {
@@ -78,6 +78,10 @@ export const authConfig = {
 						updatedSession.user.name,
 						typeof token.email === "string" ? token.email : null,
 					);
+				}
+
+				if (typeof updatedSession?.user?.email === "string") {
+					token.email = updatedSession.user.email;
 				}
 			}
 
@@ -93,6 +97,9 @@ export const authConfig = {
 				if (token.sub) {
 					sessionUser.id = token.sub;
 				}
+				if (typeof token.email === "string") {
+					sessionUser.email = token.email;
+				}
 				sessionUser.role =
 					typeof token.role === "string" ? token.role : undefined;
 			}
@@ -102,4 +109,10 @@ export const authConfig = {
 	},
 } satisfies NextAuthConfig;
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const {
+	handlers,
+	auth,
+	signIn,
+	signOut,
+	unstable_update: updateSession,
+} = NextAuth(authConfig);

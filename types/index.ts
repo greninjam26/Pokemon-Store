@@ -11,6 +11,7 @@ import type {
 	shippingAddressSchema,
 	signInFormSchema,
 	signUpFormSchema,
+	userProfileSchema,
 } from "@/lib/validators";
 
 export type Product = z.infer<typeof insertProductSchema> & {
@@ -20,6 +21,8 @@ export type Product = z.infer<typeof insertProductSchema> & {
 export type SignInForm = z.infer<typeof signInFormSchema>;
 
 export type SignUpForm = z.infer<typeof signUpFormSchema>;
+
+export type UserProfile = z.infer<typeof userProfileSchema>;
 
 export type CartItem = z.infer<typeof cartItemSchema>;
 

@@ -32,21 +32,22 @@ model Product {
 }
 
 model User {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String    @default("NO_NAME")
-  email         String?   @unique
-  emailVerified DateTime? @db.Timestamp(6)
-  image         String?
-  address       Json?     @db.Json
-  password      String?
-  role          String    @default("user")
-  paymentMethod String?
-  accounts      Account[]
-  sessions      Session[]
-  carts         Cart[]
-  orders        Order[]
-  createdAt     DateTime  @default(now()) @db.Timestamp(6)
-  updatedAt     DateTime  @updatedAt @db.Timestamp(6)
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String    @default("NO_NAME")
+  email                String?   @unique
+  emailVerified        DateTime? @db.Timestamp(6)
+  image                String?
+  address              Json?     @db.Json
+  password             String?
+  role                 String    @default("user")
+  paymentMethod        String?
+  orderHistoryPageSize Int       @default(5)
+  accounts             Account[]
+  sessions             Session[]
+  carts                Cart[]
+  orders               Order[]
+  createdAt            DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime  @updatedAt @db.Timestamp(6)
 }
 
 model Account {
