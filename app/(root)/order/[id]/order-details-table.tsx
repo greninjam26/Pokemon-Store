@@ -39,9 +39,14 @@ function OrderDetailsTable({ order, paypalClientId }: OrderDetailsTableProps) {
 						records.
 					</p>
 				</div>
-				<Button variant="outline" asChild>
-					<Link href="/">Continue Shopping</Link>
-				</Button>
+				<div className="flex flex-wrap gap-2">
+					<Button variant="outline" asChild>
+						<Link href="/account/orders">Order History</Link>
+					</Button>
+					<Button variant="outline" asChild>
+						<Link href="/">Continue Shopping</Link>
+					</Button>
+				</div>
 			</div>
 
 			<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
