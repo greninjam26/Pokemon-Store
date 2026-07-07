@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 
-import { auth } from "@/auth";
 import prisma from "@/db/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
 import {
@@ -21,7 +20,11 @@ import {
 	capturePayPalOrder as capturePayPalApiOrder,
 	createPayPalOrder as createPayPalApiOrder,
 } from "@/lib/paypal";
-import { formatError } from "@/lib/utils";
+import {
+	decimalToNumber,
+	formatError,
+	normalizePagination,
+} from "@/lib/utils";
 import {
 	insertOrderItemSchema,
 	insertOrderSchema,
@@ -30,6 +33,11 @@ import {
 } from "@/lib/validators";
 import type { PaymentResult } from "@/types";
 import { getMyCart } from "./cart.action";
+import {
+	getCurrentUser,
+	getCurrentUserId,
+	requireAdmin,
+} from "./helpers";
 import { getUserCheckoutInfo } from "./user.actions";
 
 type ActionResponse = {
@@ -46,10 +54,6 @@ type ExpirableOrder = {
 	createdAt: Date;
 	paymentResult: unknown;
 };
-
-function decimalToNumber(value: { toString: () => string }) {
-	return Number(value.toString());
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
@@ -285,18 +289,6 @@ async function updateOrderToPaid({
 	});
 }
 
-async function getCurrentUserId() {
-	const session = await auth();
-
-	return (session?.user as { id?: string } | undefined)?.id;
-}
-
-async function getCurrentUserRole() {
-	const session = await auth();
-
-	return (session?.user as { role?: string } | undefined)?.role;
-}
-
 export async function createOrder(): Promise<ActionResponse> {
 	try {
 		const userId = await getCurrentUserId();
@@ -444,9 +436,9 @@ export async function createOrder(): Promise<ActionResponse> {
 }
 
 export async function getOrderById(orderId: string) {
-	const session = await auth();
-	const userId = (session?.user as { id?: string } | undefined)?.id;
-	const role = (session?.user as { role?: string } | undefined)?.role;
+	const user = await getCurrentUser();
+	const userId = user?.id;
+	const role = user?.role;
 
 	if (!userId) {
 		return null;
@@ -510,7 +502,6 @@ export async function getMyOrders({
 
 	await expireDueUnpaidOrders();
 
-	const currentPage = Math.max(1, page);
 	const user = await prisma.user.findUnique({
 		where: { id: userId },
 		select: {
@@ -525,6 +516,7 @@ export async function getMyOrders({
 			requestedPageSize ?? ORDER_HISTORY_PAGE_SIZE,
 		),
 	);
+	const { skip } = normalizePagination({ limit: pageSize, page });
 
 	const where = { userId };
 	const [orders, orderCount] = await prisma.$transaction([
@@ -534,7 +526,7 @@ export async function getMyOrders({
 				createdAt: "desc",
 			},
 			take: pageSize,
-			skip: (currentPage - 1) * pageSize,
+			skip,
 			select: {
 				id: true,
 				createdAt: true,
@@ -568,16 +560,11 @@ export async function getAdminOrders({
 	page?: number;
 	query?: string;
 } = {}) {
-	const role = await getCurrentUserRole();
-
-	if (role !== "admin") {
-		throw new Error("User is not authorized");
-	}
+	await requireAdmin();
 
 	await expireDueUnpaidOrders();
 
-	const currentPage = Math.max(1, page);
-	const pageSize = Math.max(1, limit);
+	const { pageSize, skip } = normalizePagination({ limit, page });
 	const trimmedQuery = query.trim();
 	const orderIdSearchSuffix = getOrderIdSearchSuffix(trimmedQuery);
 	const shortOrderIdMatches =
@@ -644,7 +631,7 @@ export async function getAdminOrders({
 				createdAt: "desc",
 			},
 			take: pageSize,
-			skip: (currentPage - 1) * pageSize,
+			skip,
 			select: {
 				id: true,
 				createdAt: true,
@@ -677,11 +664,7 @@ export async function getAdminOrders({
 }
 
 export async function getOrderSummary() {
-	const role = await getCurrentUserRole();
-
-	if (role !== "admin") {
-		throw new Error("User is not authorized");
-	}
+	await requireAdmin();
 
 	await expireDueUnpaidOrders();
 
@@ -805,11 +788,7 @@ export async function getOrderSummary() {
 }
 
 export async function getAdminReports() {
-	const role = await getCurrentUserRole();
-
-	if (role !== "admin") {
-		throw new Error("User is not authorized");
-	}
+	await requireAdmin();
 
 	await expireDueUnpaidOrders();
 

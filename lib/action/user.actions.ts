@@ -4,10 +4,10 @@ import { compareSync, hashSync } from "bcrypt-ts-edge";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
 
-import { auth, signIn, signOut, updateSession } from "@/auth";
+import { signIn, signOut, updateSession } from "@/auth";
 import prisma from "@/db/prisma";
 import { ADMIN_USERS_PAGE_SIZE } from "@/lib/constant";
-import { formatError } from "@/lib/utils";
+import { formatError, normalizePagination } from "@/lib/utils";
 import {
 	paymentMethodSchema,
 	shippingAddressSchema,
@@ -16,21 +16,15 @@ import {
 	userProfileSchema,
 } from "@/lib/validators";
 import type { PaymentMethod, ShippingAddress, UserProfile } from "@/types";
+import { getCurrentUserId, requireAdmin } from "./helpers";
 
 type ActionResponse = {
 	success: boolean;
 	message: string;
 };
 
-async function getCurrentUserRole() {
-	const session = await auth();
-
-	return (session?.user as { role?: string } | undefined)?.role;
-}
-
 export async function getUserProfile() {
-	const session = await auth();
-	const userId = (session?.user as { id?: string } | undefined)?.id;
+	const userId = await getCurrentUserId();
 
 	if (!userId) {
 		redirect("/sign-in?callbackUrl=/account/profile");
@@ -75,14 +69,9 @@ export async function getAdminUsers({
 	page?: number;
 	query?: string;
 } = {}) {
-	const role = await getCurrentUserRole();
+	await requireAdmin();
 
-	if (role !== "admin") {
-		throw new Error("User is not authorized");
-	}
-
-	const currentPage = Math.max(1, page);
-	const pageSize = Math.max(1, limit);
+	const { pageSize, skip } = normalizePagination({ limit, page });
 	const trimmedQuery = query.trim();
 	const where = trimmedQuery
 		? {
@@ -110,7 +99,7 @@ export async function getAdminUsers({
 				createdAt: "desc",
 			},
 			take: pageSize,
-			skip: (currentPage - 1) * pageSize,
+			skip,
 			select: {
 				id: true,
 				name: true,
@@ -234,8 +223,7 @@ export async function updateUserAddress(
 	data: ShippingAddress,
 ): Promise<ActionResponse> {
 	try {
-		const session = await auth();
-		const userId = (session?.user as { id?: string } | undefined)?.id;
+		const userId = await getCurrentUserId();
 
 		if (!userId) {
 			redirect("/sign-in?callbackUrl=/shipping-address");
@@ -268,8 +256,7 @@ export async function updateUserPaymentMethod(
 	data: PaymentMethod,
 ): Promise<ActionResponse> {
 	try {
-		const session = await auth();
-		const userId = (session?.user as { id?: string } | undefined)?.id;
+		const userId = await getCurrentUserId();
 
 		if (!userId) {
 			redirect("/sign-in?callbackUrl=/payment-method");
@@ -302,8 +289,7 @@ export async function updateUserProfile(
 	data: UserProfile,
 ): Promise<ActionResponse> {
 	try {
-		const session = await auth();
-		const userId = (session?.user as { id?: string } | undefined)?.id;
+		const userId = await getCurrentUserId();
 
 		if (!userId) {
 			redirect("/sign-in?callbackUrl=/account/profile");

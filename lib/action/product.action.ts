@@ -1,12 +1,13 @@
 "use server";
 
-import { auth } from "@/auth";
 import prisma from "@/db/prisma";
 import {
 	ADMIN_PRODUCTS_PAGE_SIZE,
 	LATEST_PRODUCTS_LIMIT,
 } from "@/lib/constant";
+import { decimalToNumber, normalizePagination } from "@/lib/utils";
 import type { Product } from "@/types";
+import { requireAdmin } from "./helpers";
 
 const productSelect = {
 	id: true,
@@ -33,8 +34,8 @@ export async function getLatestProducts(): Promise<Product[]> {
 
 	return products.map((product) => ({
 		...product,
-		price: Number(product.price),
-		rating: Number(product.rating),
+		price: decimalToNumber(product.price),
+		rating: decimalToNumber(product.rating),
 	}));
 }
 
@@ -50,8 +51,8 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 
 	return {
 		...product,
-		price: Number(product.price),
-		rating: Number(product.rating),
+		price: decimalToNumber(product.price),
+		rating: decimalToNumber(product.rating),
 	};
 }
 
@@ -64,15 +65,9 @@ export async function getAdminProducts({
 	query?: string;
 	limit?: number;
 } = {}) {
-	const session = await auth();
-	const role = (session?.user as { role?: string } | undefined)?.role;
+	await requireAdmin();
 
-	if (role !== "admin") {
-		throw new Error("User is not authorized");
-	}
-
-	const currentPage = Math.max(1, page);
-	const pageSize = Math.max(1, limit);
+	const { pageSize, skip } = normalizePagination({ limit, page });
 	const trimmedQuery = query.trim();
 	const where = trimmedQuery
 		? {
@@ -117,7 +112,7 @@ export async function getAdminProducts({
 				createdAt: "desc",
 			},
 			take: pageSize,
-			skip: (currentPage - 1) * pageSize,
+			skip,
 		}),
 		prisma.product.count({ where }),
 	]);
@@ -125,7 +120,7 @@ export async function getAdminProducts({
 	return {
 		data: products.map((product) => ({
 			...product,
-			price: Number(product.price),
+			price: decimalToNumber(product.price),
 		})),
 		totalPages: Math.ceil(productCount / pageSize),
 		totalProducts: productCount,

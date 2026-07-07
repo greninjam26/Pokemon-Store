@@ -1,11 +1,7 @@
-import { Loader2 } from "lucide-react";
+import LoadingSpinner from "@/components/shared/loading-spinner";
 
 function AdminLoadingPage() {
-	return (
-		<div className="flex min-h-[50vh] items-center justify-center">
-			<Loader2 className="size-12 animate-spin text-primary" />
-		</div>
-	);
+	return <LoadingSpinner label="Loading admin dashboard..." />;
 }
 
 export default AdminLoadingPage;

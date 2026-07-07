@@ -11,6 +11,10 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-CA", {
 	timeStyle: "short",
 });
 
+type DecimalLike = {
+	toString: () => string;
+};
+
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
@@ -29,6 +33,27 @@ export function formatId(id: string) {
 
 export function roundToTwoDecimals(value: number) {
 	return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+export function decimalToNumber(value: DecimalLike) {
+	return Number(value.toString());
+}
+
+export function normalizePagination({
+	limit,
+	page,
+}: {
+	limit: number;
+	page: number;
+}) {
+	const currentPage = Math.max(1, page);
+	const pageSize = Math.max(1, limit);
+
+	return {
+		currentPage,
+		pageSize,
+		skip: (currentPage - 1) * pageSize,
+	};
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

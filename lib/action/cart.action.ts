@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
-import { auth } from "@/auth";
 import prisma from "@/db/prisma";
 import {
 	CART_FREE_SHIPPING_MIN_PRICE,
@@ -12,9 +11,14 @@ import {
 	CART_SHIPPING_PRICE,
 	CART_TAX_RATE,
 } from "@/lib/constant";
-import { formatError, roundToTwoDecimals } from "@/lib/utils";
+import {
+	decimalToNumber,
+	formatError,
+	roundToTwoDecimals,
+} from "@/lib/utils";
 import { cartItemSchema, insertCartSchema } from "@/lib/validators";
 import type { Cart, CartItem } from "@/types";
+import { getCurrentUserId } from "./helpers";
 
 type ActionResponse = {
 	success: boolean;
@@ -44,10 +48,6 @@ type CartRecord = {
 	createdAt: Date;
 };
 
-function toNumber(value: { toString: () => string }) {
-	return Number(value.toString());
-}
-
 function parseCartItems(items: unknown): CartItem[] {
 	const result = cartItemSchema.array().safeParse(items);
 
@@ -58,10 +58,10 @@ function cartToPlainObject(cart: CartRecord): CartWithItems {
 	return {
 		id: cart.id,
 		items: parseCartItems(cart.items),
-		itemsPrice: toNumber(cart.itemsPrice),
-		shippingPrice: toNumber(cart.shippingPrice),
-		taxPrice: toNumber(cart.taxPrice),
-		totalPrice: toNumber(cart.totalPrice),
+		itemsPrice: decimalToNumber(cart.itemsPrice),
+		shippingPrice: decimalToNumber(cart.shippingPrice),
+		taxPrice: decimalToNumber(cart.taxPrice),
+		totalPrice: decimalToNumber(cart.totalPrice),
 		sessionCartId: cart.sessionCartId,
 		userId: cart.userId,
 		createdAt: cart.createdAt.toISOString(),
@@ -158,8 +158,7 @@ export async function getMyCart(): Promise<CartWithItems | null> {
 		return null;
 	}
 
-	const session = await auth();
-	const userId = (session?.user as { id?: string } | undefined)?.id;
+	const userId = await getCurrentUserId();
 
 	if (!userId) {
 		const guestCart = await prisma.cart.findFirst({
@@ -220,8 +219,7 @@ export async function getMyCart(): Promise<CartWithItems | null> {
 export async function addItemToCart(item: CartItem): Promise<ActionResponse> {
 	try {
 		const sessionCartId = await ensureSessionCartId();
-		const session = await auth();
-		const userId = (session?.user as { id?: string } | undefined)?.id;
+		const userId = await getCurrentUserId();
 		const cart = await getMyCart();
 		const cartItem = cartItemSchema.parse(item);
 
