@@ -31,6 +31,7 @@ function OrderDetailsTable({
 }: OrderDetailsTableProps) {
 	const address = shippingAddressSchema.parse(order.shippingAddress);
 	const shouldShowPayPal =
+		!isAdmin &&
 		!order.isPaid &&
 		order.paymentMethod.trim().toLowerCase() === "paypal";
 
@@ -40,8 +41,9 @@ function OrderDetailsTable({
 				<div className="space-y-2">
 					<h1 className="h1-bold">Order {formatId(order.id)}</h1>
 					<p className="text-base font-medium leading-7 text-muted-foreground">
-						Your order has been created. Keep this page for your
-						records.
+						{isAdmin
+							? "Review this customer order and fulfillment status."
+							: "Your order has been created. Keep this page for your records."}
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
@@ -52,9 +54,11 @@ function OrderDetailsTable({
 							</Link>
 						</Button>
 					) : null}
-					<Button variant="outline" asChild>
-						<Link href="/account/orders">Order History</Link>
-					</Button>
+					{!isAdmin ? (
+						<Button variant="outline" asChild>
+							<Link href="/account/orders">Order History</Link>
+						</Button>
+					) : null}
 					<Button variant="outline" asChild>
 						<Link href="/">Continue Shopping</Link>
 					</Button>

@@ -5,10 +5,12 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import prisma from "@/db/prisma";
 import {
+	ADMIN_ORDER_SHORT_ID_LOOKUP_LIMIT,
 	ADMIN_ORDERS_PAGE_SIZE,
 	MAX_ORDER_HISTORY_PAGE_SIZE,
 	MIN_ORDER_HISTORY_PAGE_SIZE,
 	ORDER_HISTORY_PAGE_SIZE,
+	ORDER_REPORT_TIME_ZONE,
 } from "@/lib/constant";
 import {
 	capturePayPalOrder as capturePayPalApiOrder,
@@ -44,6 +46,29 @@ function isUuid(value: string) {
 	return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
 		value,
 	);
+}
+
+function getOrderIdSearchSuffix(value: string) {
+	const suffix = value
+		.replace(/^\.\.\./, "")
+		.trim()
+		.toLowerCase();
+
+	return /^[0-9a-f-]+$/.test(suffix) && suffix.length >= 4 ? suffix : "";
+}
+
+function getTimeZoneDateKey(value: Date) {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone: ORDER_REPORT_TIME_ZONE,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).formatToParts(value);
+	const year = parts.find((part) => part.type === "year")?.value;
+	const month = parts.find((part) => part.type === "month")?.value;
+	const day = parts.find((part) => part.type === "day")?.value;
+
+	return `${year}-${month}-${day}`;
 }
 
 async function updateOrderToPaid({
@@ -371,12 +396,37 @@ export async function getAdminOrders({
 	const currentPage = Math.max(1, page);
 	const pageSize = Math.max(1, limit);
 	const trimmedQuery = query.trim();
+	const orderIdSearchSuffix = getOrderIdSearchSuffix(trimmedQuery);
+	const shortOrderIdMatches =
+		trimmedQuery && orderIdSearchSuffix && !isUuid(trimmedQuery)
+			? await prisma.order.findMany({
+					orderBy: {
+						createdAt: "desc",
+					},
+					take: ADMIN_ORDER_SHORT_ID_LOOKUP_LIMIT,
+					select: {
+						id: true,
+					},
+				})
+			: [];
+	const matchingOrderIds = shortOrderIdMatches
+		.map((order) => order.id)
+		.filter((id) => id.toLowerCase().endsWith(orderIdSearchSuffix));
 	const queryFilters = [
 		...(isUuid(trimmedQuery)
 			? [
 					{
 						id: {
 							equals: trimmedQuery,
+						},
+					},
+				]
+			: []),
+		...(matchingOrderIds.length > 0
+			? [
+					{
+						id: {
+							in: matchingOrderIds,
 						},
 					},
 				]
@@ -565,9 +615,6 @@ export async function getAdminReports() {
 	}
 
 	const today = new Date();
-	const sevenDaysAgo = new Date(today);
-	sevenDaysAgo.setDate(today.getDate() - 6);
-	sevenDaysAgo.setHours(0, 0, 0, 0);
 
 	const [
 		ordersCount,
@@ -644,9 +691,9 @@ export async function getAdminReports() {
 			: 0;
 
 	const dailySales = Array.from({ length: 7 }, (_, index) => {
-		const date = new Date(sevenDaysAgo);
-		date.setDate(sevenDaysAgo.getDate() + index);
-		const key = date.toISOString().slice(0, 10);
+		const date = new Date(today);
+		date.setDate(today.getDate() - (6 - index));
+		const key = getTimeZoneDateKey(date);
 
 		return {
 			date: key,
@@ -681,7 +728,7 @@ export async function getAdminReports() {
 
 	for (const order of paidOrders) {
 		const orderTotal = decimalToNumber(order.totalPrice);
-		const orderDate = order.createdAt.toISOString().slice(0, 10);
+		const orderDate = getTimeZoneDateKey(order.createdAt);
 		const dailySale = dailySalesByDate.get(orderDate);
 		const paymentMethod = paymentMethodSales.get(order.paymentMethod) ?? {
 			method: order.paymentMethod,

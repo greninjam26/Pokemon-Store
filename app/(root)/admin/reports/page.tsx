@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdminReports } from "@/lib/action/order.action";
+import { ORDER_REPORT_TIME_ZONE } from "@/lib/constant";
 import { formatCurrency } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -25,9 +26,10 @@ function getPercent(value: number, max: number) {
 
 function formatReportDate(value: string) {
 	return new Intl.DateTimeFormat("en-CA", {
+		timeZone: ORDER_REPORT_TIME_ZONE,
 		month: "short",
 		day: "numeric",
-	}).format(new Date(`${value}T00:00:00`));
+	}).format(new Date(`${value}T12:00:00`));
 }
 
 async function AdminReportsPage() {
