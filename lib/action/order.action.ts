@@ -557,6 +557,204 @@ export async function getOrderSummary() {
 	};
 }
 
+export async function getAdminReports() {
+	const role = await getCurrentUserRole();
+
+	if (role !== "admin") {
+		throw new Error("User is not authorized");
+	}
+
+	const today = new Date();
+	const sevenDaysAgo = new Date(today);
+	sevenDaysAgo.setDate(today.getDate() - 6);
+	sevenDaysAgo.setHours(0, 0, 0, 0);
+
+	const [
+		ordersCount,
+		paidOrdersCount,
+		deliveredOrdersCount,
+		usersCount,
+		inventory,
+		lowStockProductsCount,
+		paidOrders,
+	] = await prisma.$transaction([
+		prisma.order.count(),
+		prisma.order.count({
+			where: {
+				isPaid: true,
+			},
+		}),
+		prisma.order.count({
+			where: {
+				isDelivered: true,
+			},
+		}),
+		prisma.user.count(),
+		prisma.product.aggregate({
+			_sum: {
+				stock: true,
+			},
+			_count: {
+				id: true,
+			},
+		}),
+		prisma.product.count({
+			where: {
+				stock: {
+					lte: 5,
+				},
+			},
+		}),
+		prisma.order.findMany({
+			where: {
+				isPaid: true,
+			},
+			select: {
+				id: true,
+				createdAt: true,
+				totalPrice: true,
+				paymentMethod: true,
+				orderItems: {
+					select: {
+						name: true,
+						qty: true,
+						price: true,
+						product: {
+							select: {
+								category: true,
+							},
+						},
+					},
+				},
+			},
+		}),
+	]);
+
+	const totalSales = paidOrders.reduce(
+		(total, order) => total + decimalToNumber(order.totalPrice),
+		0,
+	);
+	const averageOrderValue =
+		paidOrders.length > 0 ? totalSales / paidOrders.length : 0;
+	const paidRate =
+		ordersCount > 0 ? Math.round((paidOrdersCount / ordersCount) * 100) : 0;
+	const deliveredRate =
+		ordersCount > 0
+			? Math.round((deliveredOrdersCount / ordersCount) * 100)
+			: 0;
+
+	const dailySales = Array.from({ length: 7 }, (_, index) => {
+		const date = new Date(sevenDaysAgo);
+		date.setDate(sevenDaysAgo.getDate() + index);
+		const key = date.toISOString().slice(0, 10);
+
+		return {
+			date: key,
+			totalSales: 0,
+			orders: 0,
+		};
+	});
+	const dailySalesByDate = new Map(dailySales.map((day) => [day.date, day]));
+	const productSales = new Map<
+		string,
+		{
+			name: string;
+			qty: number;
+			revenue: number;
+		}
+	>();
+	const categorySales = new Map<
+		string,
+		{
+			category: string;
+			revenue: number;
+		}
+	>();
+	const paymentMethodSales = new Map<
+		string,
+		{
+			method: string;
+			orders: number;
+			revenue: number;
+		}
+	>();
+
+	for (const order of paidOrders) {
+		const orderTotal = decimalToNumber(order.totalPrice);
+		const orderDate = order.createdAt.toISOString().slice(0, 10);
+		const dailySale = dailySalesByDate.get(orderDate);
+		const paymentMethod = paymentMethodSales.get(order.paymentMethod) ?? {
+			method: order.paymentMethod,
+			orders: 0,
+			revenue: 0,
+		};
+
+		paymentMethod.orders += 1;
+		paymentMethod.revenue += orderTotal;
+		paymentMethodSales.set(order.paymentMethod, paymentMethod);
+
+		if (dailySale) {
+			dailySale.totalSales += orderTotal;
+			dailySale.orders += 1;
+		}
+
+		for (const item of order.orderItems) {
+			const itemRevenue = decimalToNumber(item.price) * item.qty;
+			const productSale = productSales.get(item.name) ?? {
+				name: item.name,
+				qty: 0,
+				revenue: 0,
+			};
+			const category = item.product.category;
+			const categorySale = categorySales.get(category) ?? {
+				category,
+				revenue: 0,
+			};
+
+			productSale.qty += item.qty;
+			productSale.revenue += itemRevenue;
+			productSales.set(item.name, productSale);
+
+			categorySale.revenue += itemRevenue;
+			categorySales.set(category, categorySale);
+		}
+	}
+
+	return {
+		totalSales,
+		averageOrderValue,
+		ordersCount,
+		paidOrdersCount,
+		deliveredOrdersCount,
+		paidRate,
+		deliveredRate,
+		usersCount,
+		productCount: inventory._count.id,
+		inventoryUnits: inventory._sum.stock ?? 0,
+		lowStockProductsCount,
+		dailySales,
+		topProducts: [...productSales.values()]
+			.sort((firstProduct, secondProduct) => {
+				if (secondProduct.revenue === firstProduct.revenue) {
+					return secondProduct.qty - firstProduct.qty;
+				}
+
+				return secondProduct.revenue - firstProduct.revenue;
+			})
+			.slice(0, 5),
+		categorySales: [...categorySales.values()]
+			.sort(
+				(firstCategory, secondCategory) =>
+					secondCategory.revenue - firstCategory.revenue,
+			)
+			.slice(0, 5),
+		paymentMethodSales: [...paymentMethodSales.values()].sort(
+			(firstMethod, secondMethod) =>
+				secondMethod.revenue - firstMethod.revenue,
+		),
+	};
+}
+
 export async function createPayPalOrder(
 	orderId: string,
 ): Promise<ActionResponse> {
