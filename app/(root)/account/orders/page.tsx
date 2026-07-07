@@ -17,6 +17,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getMyOrders } from "@/lib/action/order.action";
+import { EXPIRED_ORDER_PAYMENT_STATUS } from "@/lib/constant";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -28,6 +29,10 @@ type AccountOrdersPageProps = Readonly<{
 		page?: string;
 	}>;
 }>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
 
 async function AccountOrdersPage({ searchParams }: AccountOrdersPageProps) {
 	const session = await auth();
@@ -100,61 +105,74 @@ async function AccountOrdersPage({ searchParams }: AccountOrdersPageProps) {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{orders.data.map((order) => (
-									<TableRow key={order.id}>
-										<TableCell className="font-bold">
-											{formatId(order.id)}
-										</TableCell>
-										<TableCell className="font-medium text-muted-foreground">
-											{formatDateTime(order.createdAt)}
-										</TableCell>
-										<TableCell>
-											{order.paymentMethod}
-										</TableCell>
-										<TableCell className="font-bold">
-											{formatCurrency(order.totalPrice)}
-										</TableCell>
-										<TableCell>
-											<div className="flex flex-wrap gap-2">
-												<Badge
-													variant={
-														order.isPaid
-															? "secondary"
-															: "destructive"
-													}
+								{orders.data.map((order) => {
+									const isExpired =
+										isRecord(order.paymentResult) &&
+										order.paymentResult.status ===
+											EXPIRED_ORDER_PAYMENT_STATUS;
+
+									return (
+										<TableRow key={order.id}>
+											<TableCell className="font-bold">
+												{formatId(order.id)}
+											</TableCell>
+											<TableCell className="font-medium text-muted-foreground">
+												{formatDateTime(
+													order.createdAt,
+												)}
+											</TableCell>
+											<TableCell>
+												{order.paymentMethod}
+											</TableCell>
+											<TableCell className="font-bold">
+												{formatCurrency(
+													order.totalPrice,
+												)}
+											</TableCell>
+											<TableCell>
+												<div className="flex flex-wrap gap-2">
+													<Badge
+														variant={
+															order.isPaid
+																? "secondary"
+																: "destructive"
+														}
+													>
+														{order.isPaid
+															? "Paid"
+															: isExpired
+																? "Expired"
+																: "Not paid"}
+													</Badge>
+													<Badge
+														variant={
+															order.isDelivered
+																? "secondary"
+																: "destructive"
+														}
+													>
+														{order.isDelivered
+															? "Delivered"
+															: "Not delivered"}
+													</Badge>
+												</div>
+											</TableCell>
+											<TableCell className="text-right">
+												<Button
+													asChild
+													variant="outline"
+													size="sm"
 												>
-													{order.isPaid
-														? "Paid"
-														: "Not paid"}
-												</Badge>
-												<Badge
-													variant={
-														order.isDelivered
-															? "secondary"
-															: "destructive"
-													}
-												>
-													{order.isDelivered
-														? "Delivered"
-														: "Not delivered"}
-												</Badge>
-											</div>
-										</TableCell>
-										<TableCell className="text-right">
-											<Button
-												asChild
-												variant="outline"
-												size="sm"
-											>
-												<Link
-													href={`/order/${order.id}`}
-												>
-													View
-												</Link>
-											</Button>
-										</TableCell>
-									</TableRow>
-								))}
+													<Link
+														href={`/order/${order.id}`}
+													>
+														View
+													</Link>
+												</Button>
+											</TableCell>
+										</TableRow>
+									);
+								})}
 							</TableBody>
 						</Table>
 						<Pagination

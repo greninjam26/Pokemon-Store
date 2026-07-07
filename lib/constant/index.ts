@@ -13,6 +13,12 @@ export const MIN_ORDER_HISTORY_PAGE_SIZE = 1;
 export const MAX_ORDER_HISTORY_PAGE_SIZE = 20;
 export const ORDER_REPORT_TIME_ZONE =
 	process.env.ORDER_REPORT_TIME_ZONE || "America/Toronto";
+export const UNPAID_ORDER_EXPIRE_MINUTES = Number(
+	process.env.UNPAID_ORDER_EXPIRE_MINUTES || 60,
+);
+export const UNPAID_ORDER_EXPIRE_BATCH_SIZE = 25;
+export const EXPIRED_ORDER_PAYMENT_STATUS = "EXPIRED";
+export const EXPIRABLE_ORDER_PAYMENT_METHODS = ["PayPal"];
 export const CART_SESSION_COOKIE_NAME = "sessionCartId";
 export const CART_SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 export const CART_TAX_RATE = 0.13;

@@ -13,7 +13,10 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getOrderById } from "@/lib/action/order.action";
-import { PAYPAL_CURRENCY_CODE } from "@/lib/constant";
+import {
+	EXPIRED_ORDER_PAYMENT_STATUS,
+	PAYPAL_CURRENCY_CODE,
+} from "@/lib/constant";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import { shippingAddressSchema } from "@/lib/validators";
 import PayPalPayment from "./paypal-payment";
@@ -24,15 +27,23 @@ type OrderDetailsTableProps = Readonly<{
 	paypalClientId: string;
 }>;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
 function OrderDetailsTable({
 	order,
 	isAdmin = false,
 	paypalClientId,
 }: OrderDetailsTableProps) {
 	const address = shippingAddressSchema.parse(order.shippingAddress);
+	const isExpired =
+		isRecord(order.paymentResult) &&
+		order.paymentResult.status === EXPIRED_ORDER_PAYMENT_STATUS;
 	const shouldShowPayPal =
 		!isAdmin &&
 		!order.isPaid &&
+		!isExpired &&
 		order.paymentMethod.trim().toLowerCase() === "paypal";
 
 	return (
@@ -82,6 +93,8 @@ function OrderDetailsTable({
 										? ` at ${formatDateTime(order.paidAt)}`
 										: null}
 								</Badge>
+							) : isExpired ? (
+								<Badge variant="destructive">Expired</Badge>
 							) : (
 								<Badge variant="destructive">Not paid</Badge>
 							)}
@@ -225,12 +238,22 @@ function OrderDetailsTable({
 						</div>
 						{!shouldShowPayPal && !order.isPaid ? (
 							<div className="rounded-lg border bg-muted/40 p-4 text-sm font-medium leading-6 text-muted-foreground">
-								This order was placed with{" "}
-								<span className="font-bold text-foreground">
-									{order.paymentMethod}
-								</span>
-								. Payment options can be changed before placing
-								a new order.
+								{isExpired ? (
+									<>
+										This order expired before payment was
+										completed. Its items have been returned
+										to stock.
+									</>
+								) : (
+									<>
+										This order was placed with{" "}
+										<span className="font-bold text-foreground">
+											{order.paymentMethod}
+										</span>
+										. Payment options can be changed before
+										placing a new order.
+									</>
+								)}
 							</div>
 						) : null}
 					</CardContent>

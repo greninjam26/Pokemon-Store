@@ -17,6 +17,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getAdminOrders } from "@/lib/action/order.action";
+import { EXPIRED_ORDER_PAYMENT_STATUS } from "@/lib/constant";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -41,6 +42,10 @@ function getCustomerName(order: {
 	}
 
 	return order.user.email ?? "Customer";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
 }
 
 async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
@@ -125,75 +130,88 @@ async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{orders.data.map((order) => (
-									<TableRow key={order.id}>
-										<TableCell className="font-bold">
-											{formatId(order.id)}
-										</TableCell>
-										<TableCell>
-											<div className="min-w-48">
-												<p className="font-bold">
-													{getCustomerName(order)}
-												</p>
-												{order.user.email ? (
-													<p className="text-xs font-medium text-muted-foreground">
-														{order.user.email}
+								{orders.data.map((order) => {
+									const isExpired =
+										isRecord(order.paymentResult) &&
+										order.paymentResult.status ===
+											EXPIRED_ORDER_PAYMENT_STATUS;
+
+									return (
+										<TableRow key={order.id}>
+											<TableCell className="font-bold">
+												{formatId(order.id)}
+											</TableCell>
+											<TableCell>
+												<div className="min-w-48">
+													<p className="font-bold">
+														{getCustomerName(order)}
 													</p>
-												) : null}
-											</div>
-										</TableCell>
-										<TableCell className="min-w-36">
-											{formatDateTime(order.createdAt)}
-										</TableCell>
-										<TableCell className="font-bold">
-											{formatCurrency(order.totalPrice)}
-										</TableCell>
-										<TableCell>
-											<div className="flex flex-col gap-1">
+													{order.user.email ? (
+														<p className="text-xs font-medium text-muted-foreground">
+															{order.user.email}
+														</p>
+													) : null}
+												</div>
+											</TableCell>
+											<TableCell className="min-w-36">
+												{formatDateTime(
+													order.createdAt,
+												)}
+											</TableCell>
+											<TableCell className="font-bold">
+												{formatCurrency(
+													order.totalPrice,
+												)}
+											</TableCell>
+											<TableCell>
+												<div className="flex flex-col gap-1">
+													<Badge
+														variant={
+															order.isPaid
+																? "secondary"
+																: "destructive"
+														}
+													>
+														{order.isPaid
+															? "Paid"
+															: isExpired
+																? "Expired"
+																: "Not paid"}
+													</Badge>
+													<span className="text-xs font-medium text-muted-foreground">
+														{order.paymentMethod}
+													</span>
+												</div>
+											</TableCell>
+											<TableCell>
 												<Badge
 													variant={
-														order.isPaid
+														order.isDelivered
 															? "secondary"
 															: "destructive"
 													}
 												>
-													{order.isPaid
-														? "Paid"
-														: "Not paid"}
+													{order.isDelivered
+														? "Delivered"
+														: "Not delivered"}
 												</Badge>
-												<span className="text-xs font-medium text-muted-foreground">
-													{order.paymentMethod}
-												</span>
-											</div>
-										</TableCell>
-										<TableCell>
-											<Badge
-												variant={
-													order.isDelivered
-														? "secondary"
-														: "destructive"
-												}
-											>
-												{order.isDelivered
-													? "Delivered"
-													: "Not delivered"}
-											</Badge>
-										</TableCell>
-										<TableCell className="text-right">
-											<Button
-												asChild
-												variant="outline"
-												size="sm"
-											>
-												<Link
-													href={`/order/${order.id}`}
+											</TableCell>
+											<TableCell className="text-right">
+												<Button
+													asChild
+													variant="outline"
+													size="sm"
 												>
-													View
-												</Link>
-											</Button>
-										</TableCell>
-									</TableRow>
-								))}
+													<Link
+														href={`/order/${order.id}`}
+													>
+														View
+													</Link>
+												</Button>
+											</TableCell>
+										</TableRow>
+									);
+								})}
 							</TableBody>
 						</Table>
 					</div>

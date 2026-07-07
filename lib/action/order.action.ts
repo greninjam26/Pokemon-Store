@@ -4,13 +4,18 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import prisma from "@/db/prisma";
+import { Prisma } from "@/lib/generated/prisma/client";
 import {
 	ADMIN_ORDER_SHORT_ID_LOOKUP_LIMIT,
 	ADMIN_ORDERS_PAGE_SIZE,
+	EXPIRED_ORDER_PAYMENT_STATUS,
+	EXPIRABLE_ORDER_PAYMENT_METHODS,
 	MAX_ORDER_HISTORY_PAGE_SIZE,
 	MIN_ORDER_HISTORY_PAGE_SIZE,
 	ORDER_HISTORY_PAGE_SIZE,
 	ORDER_REPORT_TIME_ZONE,
+	UNPAID_ORDER_EXPIRE_BATCH_SIZE,
+	UNPAID_ORDER_EXPIRE_MINUTES,
 } from "@/lib/constant";
 import {
 	capturePayPalOrder as capturePayPalApiOrder,
@@ -32,6 +37,14 @@ type ActionResponse = {
 	message: string;
 	redirectTo?: string;
 	data?: string;
+};
+
+type ExpirableOrder = {
+	id: string;
+	isPaid: boolean;
+	paymentMethod: string;
+	createdAt: Date;
+	paymentResult: unknown;
 };
 
 function decimalToNumber(value: { toString: () => string }) {
@@ -69,6 +82,169 @@ function getTimeZoneDateKey(value: Date) {
 	const day = parts.find((part) => part.type === "day")?.value;
 
 	return `${year}-${month}-${day}`;
+}
+
+function getUnpaidOrderExpiresAt(createdAt: Date) {
+	return new Date(
+		createdAt.getTime() + UNPAID_ORDER_EXPIRE_MINUTES * 60 * 1000,
+	);
+}
+
+function isExpiredPaymentResult(paymentResult: unknown) {
+	return (
+		isRecord(paymentResult) &&
+		paymentResult.status === EXPIRED_ORDER_PAYMENT_STATUS
+	);
+}
+
+function notExpiredOrderFilter() {
+	return {
+		OR: [
+			{
+				paymentResult: {
+					equals: Prisma.AnyNull,
+				},
+			},
+			{
+				paymentResult: {
+					path: ["status"],
+					not: EXPIRED_ORDER_PAYMENT_STATUS,
+				},
+			},
+		],
+	};
+}
+
+function shouldExpireOrder(order: ExpirableOrder) {
+	return (
+		!order.isPaid &&
+		EXPIRABLE_ORDER_PAYMENT_METHODS.includes(order.paymentMethod) &&
+		!isExpiredPaymentResult(order.paymentResult) &&
+		getUnpaidOrderExpiresAt(order.createdAt).getTime() <= Date.now()
+	);
+}
+
+function getUnpaidOrderExpireCutoff() {
+	return new Date(Date.now() - UNPAID_ORDER_EXPIRE_MINUTES * 60 * 1000);
+}
+
+async function expireUnpaidOrder(
+	orderId: string,
+	{ revalidate = false }: { revalidate?: boolean } = {},
+) {
+	const result = await prisma.$transaction(async (tx) => {
+		const order = await tx.order.findUnique({
+			where: { id: orderId },
+			select: {
+				id: true,
+				isPaid: true,
+				paymentMethod: true,
+				createdAt: true,
+				paymentResult: true,
+				orderItems: {
+					select: {
+						productId: true,
+						qty: true,
+						slug: true,
+					},
+				},
+			},
+		});
+
+		if (!order || !shouldExpireOrder(order)) {
+			return { expired: false, productSlugs: [] };
+		}
+
+		const updatedOrder = await tx.order.updateMany({
+			where: {
+				id: order.id,
+				isPaid: false,
+				OR: [
+					{
+						paymentResult: {
+							equals: Prisma.AnyNull,
+						},
+					},
+					{
+						paymentResult: {
+							path: ["status"],
+							not: EXPIRED_ORDER_PAYMENT_STATUS,
+						},
+					},
+				],
+			},
+			data: {
+				paymentResult: {
+					id: order.id,
+					status: EXPIRED_ORDER_PAYMENT_STATUS,
+					pricePaid: 0,
+					expiredAt: new Date().toISOString(),
+				},
+			},
+		});
+
+		if (updatedOrder.count !== 1) {
+			return { expired: false, productSlugs: [] };
+		}
+
+		for (const item of order.orderItems) {
+			await tx.product.update({
+				where: { id: item.productId },
+				data: {
+					stock: {
+						increment: item.qty,
+					},
+				},
+			});
+		}
+
+		return {
+			expired: true,
+			productSlugs: order.orderItems.map((item) => item.slug),
+		};
+	});
+
+	if (result.expired && revalidate) {
+		revalidatePath(`/order/${orderId}`);
+		revalidatePath("/account/orders");
+		revalidatePath("/admin/orders");
+		revalidatePath("/admin/reports");
+		revalidatePath("/");
+
+		for (const slug of result.productSlugs) {
+			revalidatePath(`/product/${slug}`);
+		}
+	}
+
+	return result.expired;
+}
+
+async function expireDueUnpaidOrders({
+	revalidate = false,
+}: { revalidate?: boolean } = {}) {
+	const orders = await prisma.order.findMany({
+		where: {
+			isPaid: false,
+			paymentMethod: {
+				in: EXPIRABLE_ORDER_PAYMENT_METHODS,
+			},
+			createdAt: {
+				lte: getUnpaidOrderExpireCutoff(),
+			},
+			...notExpiredOrderFilter(),
+		},
+		orderBy: {
+			createdAt: "asc",
+		},
+		take: UNPAID_ORDER_EXPIRE_BATCH_SIZE,
+		select: {
+			id: true,
+		},
+	});
+
+	for (const order of orders) {
+		await expireUnpaidOrder(order.id, { revalidate });
+	}
 }
 
 async function updateOrderToPaid({
@@ -276,6 +452,8 @@ export async function getOrderById(orderId: string) {
 		return null;
 	}
 
+	await expireUnpaidOrder(orderId);
+
 	const order = await prisma.order.findFirst({
 		where:
 			role === "admin"
@@ -330,6 +508,8 @@ export async function getMyOrders({
 		};
 	}
 
+	await expireDueUnpaidOrders();
+
 	const currentPage = Math.max(1, page);
 	const user = await prisma.user.findUnique({
 		where: { id: userId },
@@ -360,6 +540,7 @@ export async function getMyOrders({
 				createdAt: true,
 				totalPrice: true,
 				paymentMethod: true,
+				paymentResult: true,
 				isPaid: true,
 				paidAt: true,
 				isDelivered: true,
@@ -392,6 +573,8 @@ export async function getAdminOrders({
 	if (role !== "admin") {
 		throw new Error("User is not authorized");
 	}
+
+	await expireDueUnpaidOrders();
 
 	const currentPage = Math.max(1, page);
 	const pageSize = Math.max(1, limit);
@@ -467,6 +650,7 @@ export async function getAdminOrders({
 				createdAt: true,
 				totalPrice: true,
 				paymentMethod: true,
+				paymentResult: true,
 				isPaid: true,
 				paidAt: true,
 				isDelivered: true,
@@ -499,10 +683,13 @@ export async function getOrderSummary() {
 		throw new Error("User is not authorized");
 	}
 
+	await expireDueUnpaidOrders();
+
 	const [
 		ordersCount,
 		productsCount,
 		usersCount,
+		activeOrdersCount,
 		paidSales,
 		pendingOrdersCount,
 		lowStockProductsCount,
@@ -513,6 +700,9 @@ export async function getOrderSummary() {
 		prisma.order.count(),
 		prisma.product.count(),
 		prisma.user.count(),
+		prisma.order.count({
+			where: notExpiredOrderFilter(),
+		}),
 		prisma.order.aggregate({
 			where: {
 				isPaid: true,
@@ -523,12 +713,17 @@ export async function getOrderSummary() {
 		}),
 		prisma.order.count({
 			where: {
-				OR: [
+				AND: [
+					notExpiredOrderFilter(),
 					{
-						isPaid: false,
-					},
-					{
-						isDelivered: false,
+						OR: [
+							{
+								isPaid: false,
+							},
+							{
+								isDelivered: false,
+							},
+						],
 					},
 				],
 			},
@@ -548,6 +743,7 @@ export async function getOrderSummary() {
 			select: {
 				id: true,
 				totalPrice: true,
+				paymentResult: true,
 				isPaid: true,
 				isDelivered: true,
 				createdAt: true,
@@ -595,6 +791,7 @@ export async function getOrderSummary() {
 		ordersCount,
 		productsCount,
 		usersCount,
+		activeOrdersCount,
 		totalSales: decimalToNumber(paidSales._sum.totalPrice ?? 0),
 		pendingOrdersCount,
 		lowStockProductsCount,
@@ -614,10 +811,13 @@ export async function getAdminReports() {
 		throw new Error("User is not authorized");
 	}
 
+	await expireDueUnpaidOrders();
+
 	const today = new Date();
 
 	const [
 		ordersCount,
+		activeOrdersCount,
 		paidOrdersCount,
 		deliveredOrdersCount,
 		usersCount,
@@ -627,12 +827,17 @@ export async function getAdminReports() {
 	] = await prisma.$transaction([
 		prisma.order.count(),
 		prisma.order.count({
+			where: notExpiredOrderFilter(),
+		}),
+		prisma.order.count({
 			where: {
+				...notExpiredOrderFilter(),
 				isPaid: true,
 			},
 		}),
 		prisma.order.count({
 			where: {
+				...notExpiredOrderFilter(),
 				isDelivered: true,
 			},
 		}),
@@ -684,10 +889,12 @@ export async function getAdminReports() {
 	const averageOrderValue =
 		paidOrders.length > 0 ? totalSales / paidOrders.length : 0;
 	const paidRate =
-		ordersCount > 0 ? Math.round((paidOrdersCount / ordersCount) * 100) : 0;
+		activeOrdersCount > 0
+			? Math.round((paidOrdersCount / activeOrdersCount) * 100)
+			: 0;
 	const deliveredRate =
-		ordersCount > 0
-			? Math.round((deliveredOrdersCount / ordersCount) * 100)
+		activeOrdersCount > 0
+			? Math.round((deliveredOrdersCount / activeOrdersCount) * 100)
 			: 0;
 
 	const dailySales = Array.from({ length: 7 }, (_, index) => {
@@ -771,6 +978,7 @@ export async function getAdminReports() {
 		totalSales,
 		averageOrderValue,
 		ordersCount,
+		activeOrdersCount,
 		paidOrdersCount,
 		deliveredOrdersCount,
 		paidRate,
@@ -825,6 +1033,13 @@ export async function createPayPalOrder(
 
 		if (!order) {
 			throw new Error("Order not found");
+		}
+
+		if (shouldExpireOrder(order)) {
+			await expireUnpaidOrder(order.id, { revalidate: true });
+			throw new Error(
+				"This order has expired. Please place a new order.",
+			);
 		}
 
 		if (order.isPaid) {
@@ -885,6 +1100,13 @@ export async function approvePayPalOrder(
 
 		if (!order) {
 			throw new Error("Order not found");
+		}
+
+		if (shouldExpireOrder(order)) {
+			await expireUnpaidOrder(order.id, { revalidate: true });
+			throw new Error(
+				"This order has expired. Please place a new order.",
+			);
 		}
 
 		if (order.isPaid) {
