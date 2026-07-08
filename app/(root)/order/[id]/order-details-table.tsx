@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import FadeInImage from "@/components/shared/fade-in-image";
+import OrderPaymentStatusBadge from "@/components/shared/order/order-payment-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,10 +14,8 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getOrderById } from "@/lib/action/order.action";
-import {
-	EXPIRED_ORDER_PAYMENT_STATUS,
-	PAYPAL_CURRENCY_CODE,
-} from "@/lib/constant";
+import { PAYPAL_CURRENCY_CODE } from "@/lib/constant";
+import { isOrderExpired } from "@/lib/order-utils";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import { shippingAddressSchema } from "@/lib/validators";
 import PayPalPayment from "./paypal-payment";
@@ -27,19 +26,13 @@ type OrderDetailsTableProps = Readonly<{
 	paypalClientId: string;
 }>;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null;
-}
-
 function OrderDetailsTable({
 	order,
 	isAdmin = false,
 	paypalClientId,
 }: OrderDetailsTableProps) {
 	const address = shippingAddressSchema.parse(order.shippingAddress);
-	const isExpired =
-		isRecord(order.paymentResult) &&
-		order.paymentResult.status === EXPIRED_ORDER_PAYMENT_STATUS;
+	const isExpired = isOrderExpired(order.paymentResult);
 	const shouldShowPayPal =
 		!isAdmin &&
 		!order.isPaid &&
@@ -65,11 +58,9 @@ function OrderDetailsTable({
 							</Link>
 						</Button>
 					) : null}
-					{!isAdmin ? (
-						<Button variant="outline" asChild>
-							<Link href="/account/orders">Order History</Link>
-						</Button>
-					) : null}
+					<Button variant="outline" asChild>
+						<Link href="/account/orders">Order History</Link>
+					</Button>
 					<Button variant="outline" asChild>
 						<Link href="/">Continue Shopping</Link>
 					</Button>
@@ -86,18 +77,11 @@ function OrderDetailsTable({
 							<p className="font-semibold">
 								{order.paymentMethod}
 							</p>
-							{order.isPaid ? (
-								<Badge variant="secondary">
-									Paid
-									{order.paidAt
-										? ` at ${formatDateTime(order.paidAt)}`
-										: null}
-								</Badge>
-							) : isExpired ? (
-								<Badge variant="destructive">Expired</Badge>
-							) : (
-								<Badge variant="destructive">Not paid</Badge>
-							)}
+							<OrderPaymentStatusBadge
+								isPaid={order.isPaid}
+								paymentResult={order.paymentResult}
+								paidAt={order.paidAt}
+							/>
 							{shouldShowPayPal ? (
 								<PayPalPayment
 									orderId={order.id}

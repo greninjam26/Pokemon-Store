@@ -20,6 +20,7 @@ import {
 	capturePayPalOrder as capturePayPalApiOrder,
 	createPayPalOrder as createPayPalApiOrder,
 } from "@/lib/paypal";
+import { isOrderExpired } from "@/lib/order-utils";
 import {
 	decimalToNumber,
 	formatError,
@@ -94,13 +95,6 @@ function getUnpaidOrderExpiresAt(createdAt: Date) {
 	);
 }
 
-function isExpiredPaymentResult(paymentResult: unknown) {
-	return (
-		isRecord(paymentResult) &&
-		paymentResult.status === EXPIRED_ORDER_PAYMENT_STATUS
-	);
-}
-
 function notExpiredOrderFilter() {
 	return {
 		OR: [
@@ -123,7 +117,7 @@ function shouldExpireOrder(order: ExpirableOrder) {
 	return (
 		!order.isPaid &&
 		EXPIRABLE_ORDER_PAYMENT_METHODS.includes(order.paymentMethod) &&
-		!isExpiredPaymentResult(order.paymentResult) &&
+		!isOrderExpired(order.paymentResult) &&
 		getUnpaidOrderExpiresAt(order.createdAt).getTime() <= Date.now()
 	);
 }

@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import LocalDateTime from "@/components/shared/local-date-time";
+import OrderPaymentStatusBadge from "@/components/shared/order/order-payment-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,6 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getOrderSummary } from "@/lib/action/order.action";
-import { EXPIRED_ORDER_PAYMENT_STATUS } from "@/lib/constant";
 import { formatCurrency, formatId } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -47,10 +47,6 @@ function getUserName(user: { name: string; email: string | null }) {
 	}
 
 	return user.email?.split("@")[0] ?? "User";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null;
 }
 
 async function AdminDashboardPage() {
@@ -144,74 +140,59 @@ async function AdminDashboardPage() {
 									<TableBody>
 										{summary.latestOrders
 											.slice(0, 4)
-											.map((order) => {
-												const isExpired =
-													isRecord(
-														order.paymentResult,
-													) &&
-													order.paymentResult
-														.status ===
-														EXPIRED_ORDER_PAYMENT_STATUS;
-
-												return (
-													<TableRow key={order.id}>
-														<TableCell className="font-bold">
-															{formatId(order.id)}
-														</TableCell>
-														<TableCell>
-															{getCustomerName(
-																order,
-															)}
-														</TableCell>
-														<TableCell className="font-bold">
-															{formatCurrency(
-																order.totalPrice,
-															)}
-														</TableCell>
-														<TableCell>
-															<div className="flex flex-wrap gap-1">
-																<Badge
-																	variant={
-																		order.isPaid
-																			? "secondary"
-																			: "destructive"
-																	}
-																>
-																	{order.isPaid
-																		? "Paid"
-																		: isExpired
-																			? "Expired"
-																			: "Not paid"}
-																</Badge>
-																<Badge
-																	variant={
-																		order.isDelivered
-																			? "secondary"
-																			: "destructive"
-																	}
-																>
-																	{order.isDelivered
-																		? "Delivered"
-																		: "Not delivered"}
-																</Badge>
-															</div>
-														</TableCell>
-														<TableCell className="text-right">
-															<Button
-																asChild
-																variant="outline"
-																size="sm"
+											.map((order) => (
+												<TableRow key={order.id}>
+													<TableCell className="font-bold">
+														{formatId(order.id)}
+													</TableCell>
+													<TableCell>
+														{getCustomerName(
+															order,
+														)}
+													</TableCell>
+													<TableCell className="font-bold">
+														{formatCurrency(
+															order.totalPrice,
+														)}
+													</TableCell>
+													<TableCell>
+														<div className="flex flex-wrap gap-1">
+															<OrderPaymentStatusBadge
+																isPaid={
+																	order.isPaid
+																}
+																paymentResult={
+																	order.paymentResult
+																}
+															/>
+															<Badge
+																variant={
+																	order.isDelivered
+																		? "secondary"
+																		: "destructive"
+																}
 															>
-																<Link
-																	href={`/order/${order.id}`}
-																>
-																	View
-																</Link>
-															</Button>
-														</TableCell>
-													</TableRow>
-												);
-											})}
+																{order.isDelivered
+																	? "Delivered"
+																	: "Not delivered"}
+															</Badge>
+														</div>
+													</TableCell>
+													<TableCell className="text-right">
+														<Button
+															asChild
+															variant="outline"
+															size="sm"
+														>
+															<Link
+																href={`/order/${order.id}`}
+															>
+																View
+															</Link>
+														</Button>
+													</TableCell>
+												</TableRow>
+											))}
 									</TableBody>
 								</Table>
 							</div>
