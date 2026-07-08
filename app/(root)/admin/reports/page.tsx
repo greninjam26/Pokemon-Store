@@ -11,18 +11,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAdminReports } from "@/lib/action/order.action";
 import { ORDER_REPORT_TIME_ZONE } from "@/lib/constant";
 import { formatCurrency } from "@/lib/utils";
+import {
+	DailySalesChart,
+	HorizontalValueChart,
+	PaymentMethodsChart,
+} from "./report-charts";
 
 export const metadata: Metadata = {
 	title: "Admin Reports",
 };
-
-function getPercent(value: number, max: number) {
-	if (value <= 0 || max <= 0) {
-		return 0;
-	}
-
-	return Math.max(4, Math.round((value / max) * 100));
-}
 
 function formatReportDate(value: string) {
 	return new Intl.DateTimeFormat("en-CA", {
@@ -34,18 +31,19 @@ function formatReportDate(value: string) {
 
 async function AdminReportsPage() {
 	const reports = await getAdminReports();
-	const maxDailySales = Math.max(
-		...reports.dailySales.map((day) => day.totalSales),
-		0,
-	);
-	const maxCategorySales = Math.max(
-		...reports.categorySales.map((category) => category.revenue),
-		0,
-	);
-	const maxProductSales = Math.max(
-		...reports.topProducts.map((product) => product.revenue),
-		0,
-	);
+	const dailySales = reports.dailySales.map((day) => ({
+		...day,
+		label: formatReportDate(day.date),
+	}));
+	const topProducts = reports.topProducts.map((product) => ({
+		name: product.name,
+		value: product.revenue,
+		detail: `${product.qty} sold`,
+	}));
+	const categorySales = reports.categorySales.map((category) => ({
+		name: category.category,
+		value: category.revenue,
+	}));
 	const reportCards = [
 		{
 			title: "Sales",
@@ -107,36 +105,8 @@ async function AdminReportsPage() {
 					<CardHeader className="py-3">
 						<CardTitle>Sales - Last 7 Days</CardTitle>
 					</CardHeader>
-					<CardContent className="space-y-3">
-						{reports.dailySales.map((day) => (
-							<div
-								key={day.date}
-								className="grid grid-cols-[76px_minmax(0,1fr)_92px] items-center gap-3"
-							>
-								<span className="text-sm font-bold text-muted-foreground">
-									{formatReportDate(day.date)}
-								</span>
-								<div className="h-8 overflow-hidden rounded-lg bg-muted">
-									<div
-										className="h-full rounded-lg bg-primary"
-										style={{
-											width: `${getPercent(
-												day.totalSales,
-												maxDailySales,
-											)}%`,
-										}}
-									/>
-								</div>
-								<div className="text-right">
-									<p className="text-sm font-black">
-										{formatCurrency(day.totalSales)}
-									</p>
-									<p className="text-xs font-medium text-muted-foreground">
-										{day.orders} orders
-									</p>
-								</div>
-							</div>
-						))}
+					<CardContent>
+						<DailySalesChart data={dailySales} />
 					</CardContent>
 				</Card>
 
@@ -179,43 +149,18 @@ async function AdminReportsPage() {
 				</Card>
 			</div>
 
-			<div className="grid gap-4 xl:grid-cols-3">
-				<Card className="rounded-lg">
+			<div className="grid gap-4 xl:grid-cols-2">
+				<Card className="rounded-lg xl:col-span-2">
 					<CardHeader className="py-3">
 						<CardTitle>Top Products</CardTitle>
 					</CardHeader>
-					<CardContent className="space-y-3">
-						{reports.topProducts.length === 0 ? (
+					<CardContent>
+						{topProducts.length === 0 ? (
 							<p className="text-sm font-medium text-muted-foreground">
 								No paid product sales yet.
 							</p>
 						) : (
-							reports.topProducts.map((product) => (
-								<div key={product.name} className="space-y-1">
-									<div className="flex justify-between gap-3">
-										<span className="line-clamp-1 text-sm font-bold">
-											{product.name}
-										</span>
-										<span className="shrink-0 text-sm font-black">
-											{formatCurrency(product.revenue)}
-										</span>
-									</div>
-									<div className="h-2 overflow-hidden rounded-full bg-muted">
-										<div
-											className="h-full rounded-full bg-primary"
-											style={{
-												width: `${getPercent(
-													product.revenue,
-													maxProductSales,
-												)}%`,
-											}}
-										/>
-									</div>
-									<p className="text-xs font-medium text-muted-foreground">
-										{product.qty} sold
-									</p>
-								</div>
-							))
+							<HorizontalValueChart data={topProducts} />
 						)}
 					</CardContent>
 				</Card>
@@ -224,38 +169,13 @@ async function AdminReportsPage() {
 					<CardHeader className="py-3">
 						<CardTitle>Sales By Category</CardTitle>
 					</CardHeader>
-					<CardContent className="space-y-3">
-						{reports.categorySales.length === 0 ? (
+					<CardContent>
+						{categorySales.length === 0 ? (
 							<p className="text-sm font-medium text-muted-foreground">
 								No paid category sales yet.
 							</p>
 						) : (
-							reports.categorySales.map((category) => (
-								<div
-									key={category.category}
-									className="space-y-1"
-								>
-									<div className="flex justify-between gap-3">
-										<span className="line-clamp-1 text-sm font-bold">
-											{category.category}
-										</span>
-										<span className="shrink-0 text-sm font-black">
-											{formatCurrency(category.revenue)}
-										</span>
-									</div>
-									<div className="h-2 overflow-hidden rounded-full bg-muted">
-										<div
-											className="h-full rounded-full bg-primary"
-											style={{
-												width: `${getPercent(
-													category.revenue,
-													maxCategorySales,
-												)}%`,
-											}}
-										/>
-									</div>
-								</div>
-							))
+							<HorizontalValueChart data={categorySales} />
 						)}
 					</CardContent>
 				</Card>
@@ -264,30 +184,15 @@ async function AdminReportsPage() {
 					<CardHeader className="py-3">
 						<CardTitle>Payment Methods</CardTitle>
 					</CardHeader>
-					<CardContent className="space-y-2">
+					<CardContent>
 						{reports.paymentMethodSales.length === 0 ? (
 							<p className="text-sm font-medium text-muted-foreground">
 								No paid payment data yet.
 							</p>
 						) : (
-							reports.paymentMethodSales.map((method) => (
-								<div
-									key={method.method}
-									className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-								>
-									<div>
-										<p className="text-sm font-bold">
-											{method.method}
-										</p>
-										<p className="text-xs font-medium text-muted-foreground">
-											{method.orders} paid orders
-										</p>
-									</div>
-									<span className="text-sm font-black">
-										{formatCurrency(method.revenue)}
-									</span>
-								</div>
-							))
+							<PaymentMethodsChart
+								data={reports.paymentMethodSales}
+							/>
 						)}
 					</CardContent>
 				</Card>
