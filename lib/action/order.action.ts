@@ -14,6 +14,7 @@ import {
 	MIN_ORDER_HISTORY_PAGE_SIZE,
 	ORDER_HISTORY_PAGE_SIZE,
 	ORDER_REPORT_TIME_ZONE,
+	PAYMENT_METHOD_CASH_ON_DELIVERY,
 	UNPAID_ORDER_EXPIRE_BATCH_SIZE,
 	UNPAID_ORDER_EXPIRE_MINUTES,
 } from "@/lib/constant";
@@ -22,11 +23,7 @@ import {
 	createPayPalOrder as createPayPalApiOrder,
 } from "@/lib/paypal";
 import { isOrderExpired } from "@/lib/order-utils";
-import {
-	decimalToNumber,
-	formatError,
-	normalizePagination,
-} from "@/lib/utils";
+import { decimalToNumber, formatError, normalizePagination } from "@/lib/utils";
 import {
 	insertOrderItemSchema,
 	insertOrderSchema,
@@ -35,11 +32,7 @@ import {
 } from "@/lib/validators";
 import type { PaymentResult } from "@/types";
 import { getMyCart } from "./cart.action";
-import {
-	getCurrentUser,
-	getCurrentUserId,
-	requireAdmin,
-} from "./helpers";
+import { getCurrentUser, getCurrentUserId, requireAdmin } from "./helpers";
 import { getUserCheckoutInfo } from "./user.actions";
 
 type ActionResponse = {
@@ -58,7 +51,10 @@ type ExpirableOrder = {
 };
 
 function isCashOnDelivery(paymentMethod: string) {
-	return paymentMethod.trim().toLowerCase() === "cash on delivery";
+	return (
+		paymentMethod.trim().toLowerCase() ===
+		PAYMENT_METHOD_CASH_ON_DELIVERY.toLowerCase()
+	);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -695,7 +691,7 @@ export async function updateOrderToPaidCOD(
 		if (!isCashOnDelivery(order.paymentMethod)) {
 			return {
 				success: false,
-				message: `Only Cash On Delivery orders can be marked paid manually. This order uses ${order.paymentMethod || DEFAULT_PAYMENT_METHOD}.`,
+				message: `Only ${PAYMENT_METHOD_CASH_ON_DELIVERY} orders can be marked paid manually. This order uses ${order.paymentMethod || DEFAULT_PAYMENT_METHOD}.`,
 			};
 		}
 

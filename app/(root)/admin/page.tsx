@@ -22,32 +22,16 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getOrderSummary } from "@/lib/action/order.action";
-import { formatCurrency, formatId } from "@/lib/utils";
+import {
+	formatCurrency,
+	formatId,
+	getCustomerDisplayName,
+	getUserDisplayName,
+} from "@/lib/utils";
 
 export const metadata: Metadata = {
 	title: "Admin Dashboard",
 };
-
-function getCustomerName(order: {
-	user: {
-		name: string;
-		email: string | null;
-	};
-}) {
-	if (order.user.name && order.user.name !== "NO_NAME") {
-		return order.user.name;
-	}
-
-	return order.user.email ?? "Customer";
-}
-
-function getUserName(user: { name: string; email: string | null }) {
-	if (user.name && user.name !== "NO_NAME") {
-		return user.name;
-	}
-
-	return user.email?.split("@")[0] ?? "User";
-}
 
 async function AdminDashboardPage() {
 	const summary = await getOrderSummary();
@@ -146,8 +130,8 @@ async function AdminDashboardPage() {
 														{formatId(order.id)}
 													</TableCell>
 													<TableCell>
-														{getCustomerName(
-															order,
+														{getCustomerDisplayName(
+															order.user,
 														)}
 													</TableCell>
 													<TableCell className="font-bold">
@@ -254,7 +238,7 @@ async function AdminDashboardPage() {
 									>
 										<div className="min-w-0">
 											<p className="truncate text-sm font-bold">
-												{getUserName(user)}
+												{getUserDisplayName(user)}
 											</p>
 											<p className="truncate text-xs font-medium text-muted-foreground">
 												<LocalDateTime

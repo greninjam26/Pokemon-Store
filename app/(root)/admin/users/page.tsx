@@ -18,6 +18,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { deleteUser, getAdminUsers } from "@/lib/action/user.actions";
+import { getUserDisplayName } from "@/lib/utils";
 
 export const metadata: Metadata = {
 	title: "Admin Users",
@@ -29,14 +30,6 @@ type AdminUsersPageProps = Readonly<{
 		query?: string;
 	}>;
 }>;
-
-function getDisplayName(user: { name: string; email: string | null }) {
-	if (user.name && user.name !== "NO_NAME") {
-		return user.name;
-	}
-
-	return user.email?.split("@")[0] ?? "User";
-}
 
 async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
 	const { page, query } = await searchParams;
@@ -103,7 +96,7 @@ async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
 								{users.data.map((user) => (
 									<TableRow key={user.id}>
 										<TableCell className="min-w-40 font-bold">
-											{getDisplayName(user)}
+											{getUserDisplayName(user)}
 										</TableCell>
 										<TableCell className="min-w-56">
 											{user.email ?? "No email"}

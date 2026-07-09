@@ -15,7 +15,11 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getOrderById } from "@/lib/action/order.action";
-import { PAYPAL_CURRENCY_CODE } from "@/lib/constant";
+import {
+	PAYMENT_METHOD_CASH_ON_DELIVERY,
+	PAYMENT_METHOD_PAYPAL,
+	PAYPAL_CURRENCY_CODE,
+} from "@/lib/constant";
 import { isOrderExpired } from "@/lib/order-utils";
 import { formatCurrency, formatId } from "@/lib/utils";
 import { shippingAddressSchema } from "@/lib/validators";
@@ -39,12 +43,14 @@ function OrderDetailsTable({
 		!isAdmin &&
 		!order.isPaid &&
 		!isExpired &&
-		order.paymentMethod.trim().toLowerCase() === "paypal";
+		order.paymentMethod.trim().toLowerCase() ===
+			PAYMENT_METHOD_PAYPAL.toLowerCase();
 	const canMarkPaid =
 		isAdmin &&
 		!order.isPaid &&
 		!isExpired &&
-		order.paymentMethod.trim().toLowerCase() === "cash on delivery";
+		order.paymentMethod.trim().toLowerCase() ===
+			PAYMENT_METHOD_CASH_ON_DELIVERY.toLowerCase();
 	const canMarkDelivered = isAdmin && order.isPaid && !order.isDelivered;
 
 	return (

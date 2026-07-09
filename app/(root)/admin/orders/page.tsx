@@ -18,7 +18,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getAdminOrders } from "@/lib/action/order.action";
-import { formatCurrency, formatId } from "@/lib/utils";
+import { formatCurrency, formatId, getCustomerDisplayName } from "@/lib/utils";
 
 export const metadata: Metadata = {
 	title: "Admin Orders",
@@ -30,19 +30,6 @@ type AdminOrdersPageProps = Readonly<{
 		query?: string;
 	}>;
 }>;
-
-function getCustomerName(order: {
-	user: {
-		name: string;
-		email: string | null;
-	};
-}) {
-	if (order.user.name && order.user.name !== "NO_NAME") {
-		return order.user.name;
-	}
-
-	return order.user.email ?? "Customer";
-}
 
 async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
 	const { page, query } = await searchParams;
@@ -88,8 +75,7 @@ async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
 								No orders found
 							</p>
 							<p className="text-sm font-medium text-muted-foreground">
-								Try a different search term or clear the
-								filter.
+								Try a different search term or clear the filter.
 							</p>
 						</div>
 					</div>
@@ -118,7 +104,9 @@ async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
 										<TableCell>
 											<div className="min-w-48">
 												<p className="font-bold">
-													{getCustomerName(order)}
+													{getCustomerDisplayName(
+														order.user,
+													)}
 												</p>
 												{order.user.email ? (
 													<p className="text-xs font-medium text-muted-foreground">

@@ -31,8 +31,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { USER_ROLES } from "@/lib/constant";
 import { updateUser } from "@/lib/action/user.actions";
+import { USER_ROLES } from "@/lib/constant";
+import { getCleanUserName } from "@/lib/utils";
 import { adminUpdateUserSchema } from "@/lib/validators";
 
 type UpdateUserFormValues = z.infer<typeof adminUpdateUserSchema>;
@@ -46,10 +47,6 @@ type UpdateUserFormProps = Readonly<{
 		orderCount: number;
 	};
 }>;
-
-function getDisplayName(name: string) {
-	return name === "NO_NAME" ? "" : name;
-}
 
 function UpdateUserForm({ user }: UpdateUserFormProps) {
 	const router = useRouter();
@@ -99,7 +96,7 @@ function UpdateUserForm({ user }: UpdateUserFormProps) {
 								<FormLabel>Name</FormLabel>
 								<Input
 									value={
-										getDisplayName(user.name) || "No name"
+										getCleanUserName(user.name) || "No name"
 									}
 									disabled
 									readOnly

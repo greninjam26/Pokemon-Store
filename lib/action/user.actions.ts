@@ -9,7 +9,11 @@ import type { z } from "zod";
 import { signIn, signOut, updateSession } from "@/auth";
 import prisma from "@/db/prisma";
 import { ADMIN_USERS_PAGE_SIZE } from "@/lib/constant";
-import { formatError, normalizePagination } from "@/lib/utils";
+import {
+	formatError,
+	getCleanUserName,
+	normalizePagination,
+} from "@/lib/utils";
 import {
 	adminUpdateUserSchema,
 	paymentMethodSchema,
@@ -47,7 +51,7 @@ export async function getUserProfile() {
 	}
 
 	return {
-		name: user.name === "NO_NAME" ? "" : user.name,
+		name: getCleanUserName(user.name),
 		email: user.email ?? "",
 		orderHistoryPageSize: user.orderHistoryPageSize,
 	};

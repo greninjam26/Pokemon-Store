@@ -19,17 +19,25 @@ export const UNPAID_ORDER_EXPIRE_MINUTES = Number(
 );
 export const UNPAID_ORDER_EXPIRE_BATCH_SIZE = 25;
 export const EXPIRED_ORDER_PAYMENT_STATUS = "EXPIRED";
-export const EXPIRABLE_ORDER_PAYMENT_METHODS = ["PayPal"];
 export const CART_SESSION_COOKIE_NAME = "sessionCartId";
 export const CART_SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 export const CART_TAX_RATE = 0.13;
 export const CART_SHIPPING_PRICE = 10;
 export const CART_FREE_SHIPPING_MIN_PRICE = 100;
+export const PAYMENT_METHOD_CREDIT_CARD = "Credit Card";
+export const PAYMENT_METHOD_PAYPAL = "PayPal";
+export const PAYMENT_METHOD_CASH_ON_DELIVERY = "Cash On Delivery";
+export const DEFAULT_PAYMENT_METHOD_OPTIONS = [
+	PAYMENT_METHOD_CREDIT_CARD,
+	PAYMENT_METHOD_PAYPAL,
+	PAYMENT_METHOD_CASH_ON_DELIVERY,
+] as const;
 export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
 	? process.env.PAYMENT_METHODS.split(",").map((method) => method.trim())
-	: ["Credit Card", "PayPal", "Cash On Delivery"];
+	: [...DEFAULT_PAYMENT_METHOD_OPTIONS];
 export const DEFAULT_PAYMENT_METHOD =
 	process.env.DEFAULT_PAYMENT_METHOD || PAYMENT_METHODS[0];
+export const EXPIRABLE_ORDER_PAYMENT_METHODS = [PAYMENT_METHOD_PAYPAL];
 export const PAYPAL_CURRENCY_CODE = "CAD";
 export const SHIPPING_ADDRESS_DEFAULT_VALUES = {
 	fullName: "",
