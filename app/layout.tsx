@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
+
+import { ourFileRouter } from "@/app/api/uploadthing/core";
 import { Toaster } from "@/components/ui/sonner";
 import { APP_DESCRIPTION, APP_NAME, SERVER_URL } from "@/lib/constant";
 import "./globals.css";
@@ -24,6 +28,9 @@ export default function RootLayout({
 					enableSystem
 					disableTransitionOnChange
 				>
+					<NextSSRPlugin
+						routerConfig={extractRouterConfig(ourFileRouter)}
+					/>
 					{children}
 					<Toaster />
 				</ThemeProvider>

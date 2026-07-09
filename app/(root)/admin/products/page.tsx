@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import DeleteDialog from "@/components/shared/delete-dialog";
 import FadeInImage from "@/components/shared/fade-in-image";
 import Pagination from "@/components/shared/pagination";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { getAdminProducts } from "@/lib/action/product.action";
+import {
+	deleteProduct,
+	getAdminProducts,
+} from "@/lib/action/product.action";
 import { formatCurrency } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -109,9 +113,11 @@ async function AdminProductsPage({ searchParams }: AdminProductsPageProps) {
 							<Link href="/admin/products">Clear</Link>
 						</Button>
 					) : null}
-					<Button disabled>
-						<Plus className="size-4" />
-						Add Product
+					<Button asChild>
+						<Link href="/admin/products/create">
+							<Plus className="size-4" />
+							Add Product
+						</Link>
 					</Button>
 				</div>
 			</CardHeader>
@@ -182,14 +188,27 @@ async function AdminProductsPage({ searchParams }: AdminProductsPageProps) {
 													{status.label}
 												</Badge>
 											</TableCell>
-											<TableCell className="text-right">
-												<Button
-													variant="outline"
-													size="sm"
-													disabled
-												>
-													Edit
-												</Button>
+											<TableCell>
+												<div className="flex justify-end gap-2">
+													<Button
+														asChild
+														variant="outline"
+														size="sm"
+													>
+														<Link
+															href={`/admin/products/${product.id}`}
+														>
+															Edit
+														</Link>
+													</Button>
+													<DeleteDialog
+														id={product.id}
+														label="product"
+														action={
+															deleteProduct
+														}
+													/>
+												</div>
 											</TableCell>
 										</TableRow>
 									);

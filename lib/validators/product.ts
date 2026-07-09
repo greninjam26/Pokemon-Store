@@ -34,3 +34,7 @@ export const insertProductSchema = z.object({
 	isFeatured: z.boolean().default(false),
 	banner: z.string().nullable().default(null),
 });
+
+export const updateProductSchema = insertProductSchema.extend({
+	id: z.string().uuid("Product ID must be a valid UUID"),
+});
