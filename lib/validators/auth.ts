@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
 	MAX_ORDER_HISTORY_PAGE_SIZE,
 	MIN_ORDER_HISTORY_PAGE_SIZE,
+	USER_ROLES,
 } from "@/lib/constant";
 
 const optionalPasswordSchema = z
@@ -92,3 +93,9 @@ export const userProfileSchema = z
 			});
 		}
 	});
+
+export const adminUpdateUserSchema = z.object({
+	id: z.string().uuid("User ID must be a valid UUID"),
+	name: z.string().trim().min(3, "Name must be at least 3 characters"),
+	role: z.enum(USER_ROLES),
+});

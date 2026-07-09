@@ -2,13 +2,16 @@
 
 import { compareSync, hashSync } from "bcrypt-ts-edge";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { z } from "zod";
 
 import { signIn, signOut, updateSession } from "@/auth";
 import prisma from "@/db/prisma";
 import { ADMIN_USERS_PAGE_SIZE } from "@/lib/constant";
 import { formatError, normalizePagination } from "@/lib/utils";
 import {
+	adminUpdateUserSchema,
 	paymentMethodSchema,
 	shippingAddressSchema,
 	signInFormSchema,
@@ -124,6 +127,122 @@ export async function getAdminUsers({
 		totalPages: Math.ceil(userCount / pageSize),
 		totalUsers: userCount,
 	};
+}
+
+export async function getUserById(id: string) {
+	await requireAdmin();
+
+	return prisma.user.findUnique({
+		where: { id },
+		select: {
+			id: true,
+			name: true,
+			email: true,
+			role: true,
+			createdAt: true,
+			_count: {
+				select: {
+					orders: true,
+				},
+			},
+		},
+	});
+}
+
+export async function updateUser(
+	data: z.infer<typeof adminUpdateUserSchema>,
+): Promise<ActionResponse> {
+	try {
+		const currentUserId = await getCurrentUserId();
+
+		await requireAdmin();
+
+		const user = adminUpdateUserSchema.parse(data);
+
+		if (currentUserId === user.id && user.role !== "admin") {
+			return {
+				success: false,
+				message: "You cannot remove your own admin role",
+			};
+		}
+
+		await prisma.user.update({
+			where: { id: user.id },
+			data: {
+				name: user.name,
+				role: user.role,
+			},
+		});
+
+		revalidatePath("/admin/users");
+		revalidatePath(`/admin/users/${user.id}`);
+
+		return {
+			success: true,
+			message: "User updated",
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: formatError(error),
+		};
+	}
+}
+
+export async function deleteUser(id: string): Promise<ActionResponse> {
+	try {
+		const currentUserId = await getCurrentUserId();
+
+		await requireAdmin();
+
+		if (currentUserId === id) {
+			return {
+				success: false,
+				message: "You cannot delete your own account",
+			};
+		}
+
+		const user = await prisma.user.findUnique({
+			where: { id },
+			select: {
+				_count: {
+					select: {
+						orders: true,
+					},
+				},
+			},
+		});
+
+		if (!user) {
+			return {
+				success: false,
+				message: "User not found",
+			};
+		}
+
+		if (user._count.orders > 0) {
+			return {
+				success: false,
+				message: "Users with existing orders cannot be deleted",
+			};
+		}
+
+		await prisma.user.delete({
+			where: { id },
+		});
+
+		revalidatePath("/admin/users");
+
+		return {
+			success: true,
+			message: "User deleted",
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: formatError(error),
+		};
+	}
 }
 
 export async function signInWithCredentials(

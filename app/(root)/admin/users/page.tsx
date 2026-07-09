@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import DeleteDialog from "@/components/shared/delete-dialog";
 import LocalDateTime from "@/components/shared/local-date-time";
 import Pagination from "@/components/shared/pagination";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { getAdminUsers } from "@/lib/action/user.actions";
+import { deleteUser, getAdminUsers } from "@/lib/action/user.actions";
 
 export const metadata: Metadata = {
 	title: "Admin Users",
@@ -142,14 +143,25 @@ async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
 												value={user.createdAt.toISOString()}
 											/>
 										</TableCell>
-										<TableCell className="text-right">
-											<Button
-												variant="outline"
-												size="sm"
-												disabled
-											>
-												View
-											</Button>
+										<TableCell>
+											<div className="flex justify-end gap-2">
+												<Button
+													asChild
+													variant="outline"
+													size="sm"
+												>
+													<Link
+														href={`/admin/users/${user.id}`}
+													>
+														Edit
+													</Link>
+												</Button>
+												<DeleteDialog
+													id={user.id}
+													label="user"
+													action={deleteUser}
+												/>
+											</div>
 										</TableCell>
 									</TableRow>
 								))}

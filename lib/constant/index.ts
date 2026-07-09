@@ -7,6 +7,7 @@ export const LATEST_PRODUCTS_LIMIT = 4;
 export const ADMIN_PRODUCTS_PAGE_SIZE = 10;
 export const ADMIN_ORDERS_PAGE_SIZE = 10;
 export const ADMIN_USERS_PAGE_SIZE = 10;
+export const USER_ROLES = ["user", "admin"] as const;
 export const ADMIN_ORDER_SHORT_ID_LOOKUP_LIMIT = 1000;
 export const ORDER_HISTORY_PAGE_SIZE = 5;
 export const MIN_ORDER_HISTORY_PAGE_SIZE = 1;
