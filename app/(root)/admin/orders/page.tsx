@@ -1,15 +1,14 @@
-import { Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import AdminSearch from "@/components/admin/admin-search";
 import LocalDateTime from "@/components/shared/local-date-time";
 import OrderPaymentStatusBadge from "@/components/shared/order/order-payment-status-badge";
 import Pagination from "@/components/shared/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
 	Table,
 	TableBody,
@@ -75,27 +74,11 @@ async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
 						{orders.totalOrders === 1 ? "" : "s"} found
 					</p>
 				</div>
-				<div className="flex flex-col gap-2 md:flex-row">
-					<form className="flex gap-2" action="/admin/orders">
-						<div className="relative">
-							<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-							<Input
-								name="query"
-								placeholder="Search orders"
-								className="h-10 pl-9 sm:w-64"
-								defaultValue={searchQuery}
-							/>
-						</div>
-						<Button type="submit" variant="outline">
-							Search
-						</Button>
-					</form>
-					{searchQuery ? (
-						<Button asChild variant="ghost">
-							<Link href="/admin/orders">Clear</Link>
-						</Button>
-					) : null}
-				</div>
+				<AdminSearch
+					action="/admin/orders"
+					placeholder="Search orders"
+					defaultValue={searchQuery}
+				/>
 			</CardHeader>
 			<CardContent className="p-0">
 				{orders.data.length === 0 ? (

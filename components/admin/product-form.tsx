@@ -24,10 +24,11 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { createProduct, updateProduct } from "@/lib/action/product.action";
 import { UploadButton } from "@/lib/uploadthing";
-import { cn } from "@/lib/utils";
 import { insertProductSchema } from "@/lib/validators";
 import type { Product } from "@/types";
 
@@ -222,10 +223,8 @@ function ProductForm({ type, product, productId }: ProductFormProps) {
 								<FormItem>
 									<FormLabel>Description</FormLabel>
 									<FormControl>
-										<textarea
-											className={cn(
-												"min-h-28 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
-											)}
+										<Textarea
+											className="min-h-28 resize-none"
 											placeholder="Describe the product for the detail page."
 											{...field}
 										/>
@@ -457,19 +456,17 @@ function ProductForm({ type, product, productId }: ProductFormProps) {
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Featured</FormLabel>
-										<label className="flex h-8 items-center gap-2 rounded-lg border px-3 text-sm font-bold">
-											<input
-												type="checkbox"
-												className="size-4 accent-primary"
-												checked={field.value}
-												onChange={(event) =>
-													field.onChange(
-														event.target.checked,
-													)
-												}
-											/>
+										<div className="flex h-8 items-center gap-2 rounded-lg border px-3 text-sm font-bold">
+											<FormControl>
+												<Checkbox
+													checked={field.value}
+													onCheckedChange={
+														field.onChange
+													}
+												/>
+											</FormControl>
 											Show as featured
-										</label>
+										</div>
 										<FormMessage />
 									</FormItem>
 								)}

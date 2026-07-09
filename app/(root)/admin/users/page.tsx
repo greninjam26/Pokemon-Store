@@ -1,15 +1,14 @@
-import { Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import AdminSearch from "@/components/admin/admin-search";
 import DeleteDialog from "@/components/shared/delete-dialog";
 import LocalDateTime from "@/components/shared/local-date-time";
 import Pagination from "@/components/shared/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
 	Table,
 	TableBody,
@@ -69,27 +68,11 @@ async function AdminUsersPage({ searchParams }: AdminUsersPageProps) {
 						{users.totalUsers === 1 ? "" : "s"} found
 					</p>
 				</div>
-				<div className="flex flex-col gap-2 md:flex-row">
-					<form className="flex gap-2" action="/admin/users">
-						<div className="relative">
-							<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-							<Input
-								name="query"
-								placeholder="Search users"
-								className="h-10 pl-9 sm:w-64"
-								defaultValue={searchQuery}
-							/>
-						</div>
-						<Button type="submit" variant="outline">
-							Search
-						</Button>
-					</form>
-					{searchQuery ? (
-						<Button asChild variant="ghost">
-							<Link href="/admin/users">Clear</Link>
-						</Button>
-					) : null}
-				</div>
+				<AdminSearch
+					action="/admin/users"
+					placeholder="Search users"
+					defaultValue={searchQuery}
+				/>
 			</CardHeader>
 			<CardContent className="p-0">
 				{users.data.length === 0 ? (

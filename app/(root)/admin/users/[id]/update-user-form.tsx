@@ -24,16 +24,25 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { USER_ROLES } from "@/lib/constant";
 import { updateUser } from "@/lib/action/user.actions";
-import { cn } from "@/lib/utils";
 import { adminUpdateUserSchema } from "@/lib/validators";
 
 type UpdateUserFormValues = z.infer<typeof adminUpdateUserSchema>;
 
 type UpdateUserFormProps = Readonly<{
-	user: UpdateUserFormValues & {
+	user: {
+		id: string;
+		name: string;
 		email: string | null;
+		role: UpdateUserFormValues["role"];
 		orderCount: number;
 	};
 }>;
@@ -48,7 +57,6 @@ function UpdateUserForm({ user }: UpdateUserFormProps) {
 		resolver: zodResolver(adminUpdateUserSchema),
 		defaultValues: {
 			id: user.id,
-			name: getDisplayName(user.name),
 			role: user.role,
 		},
 	});
@@ -74,7 +82,7 @@ function UpdateUserForm({ user }: UpdateUserFormProps) {
 						<div>
 							<CardTitle>Update User</CardTitle>
 							<p className="text-sm font-medium text-muted-foreground">
-								Edit account display details and access level.
+								Review account details and manage access level.
 							</p>
 						</div>
 						<Button
@@ -87,22 +95,16 @@ function UpdateUserForm({ user }: UpdateUserFormProps) {
 					</CardHeader>
 					<CardContent className="grid gap-5">
 						<div className="grid gap-4 md:grid-cols-2">
-							<FormField
-								control={form.control}
-								name="name"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Name</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="User name"
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
+							<FormItem>
+								<FormLabel>Name</FormLabel>
+								<Input
+									value={
+										getDisplayName(user.name) || "No name"
+									}
+									disabled
+									readOnly
+								/>
+							</FormItem>
 
 							<FormItem>
 								<FormLabel>Email</FormLabel>
@@ -121,25 +123,26 @@ function UpdateUserForm({ user }: UpdateUserFormProps) {
 								render={({ field }) => (
 									<FormItem>
 										<FormLabel>Role</FormLabel>
-										<FormControl>
-											<select
-												className={cn(
-													"h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm font-medium outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-												)}
-												value={field.value}
-												onChange={field.onChange}
-											>
+										<Select
+											value={field.value}
+											onValueChange={field.onChange}
+										>
+											<FormControl>
+												<SelectTrigger>
+													<SelectValue placeholder="Select role" />
+												</SelectTrigger>
+											</FormControl>
+											<SelectContent>
 												{USER_ROLES.map((role) => (
-													<option
+													<SelectItem
 														key={role}
 														value={role}
-														className="bg-background text-foreground"
 													>
 														{role}
-													</option>
+													</SelectItem>
 												))}
-											</select>
-										</FormControl>
+											</SelectContent>
+										</Select>
 										<FormMessage />
 									</FormItem>
 								)}
