@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import FadeInImage from "@/components/shared/fade-in-image";
+import LocalDateTime from "@/components/shared/local-date-time";
 import OrderPaymentStatusBadge from "@/components/shared/order/order-payment-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import {
 import { getOrderById } from "@/lib/action/order.action";
 import { PAYPAL_CURRENCY_CODE } from "@/lib/constant";
 import { isOrderExpired } from "@/lib/order-utils";
-import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
+import { formatCurrency, formatId } from "@/lib/utils";
 import { shippingAddressSchema } from "@/lib/validators";
 import AdminOrderActions from "./admin-order-actions";
 import PayPalPayment from "./paypal-payment";
@@ -122,9 +123,14 @@ function OrderDetailsTable({
 							{order.isDelivered ? (
 								<Badge variant="secondary">
 									Delivered
-									{order.deliveredAt
-										? ` at ${formatDateTime(order.deliveredAt)}`
-										: null}
+									{order.deliveredAt ? (
+										<>
+											{" at "}
+											<LocalDateTime
+												value={order.deliveredAt.toISOString()}
+											/>
+										</>
+									) : null}
 								</Badge>
 							) : (
 								<Badge variant="destructive">

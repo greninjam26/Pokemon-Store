@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import LocalDateTime from "@/components/shared/local-date-time";
 import OrderPaymentStatusBadge from "@/components/shared/order/order-payment-status-badge";
 import Pagination from "@/components/shared/pagination";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { getAdminOrders } from "@/lib/action/order.action";
-import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
+import { formatCurrency, formatId } from "@/lib/utils";
 
 export const metadata: Metadata = {
 	title: "Admin Orders",
@@ -144,7 +145,9 @@ async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
 											</div>
 										</TableCell>
 										<TableCell className="min-w-36">
-											{formatDateTime(order.createdAt)}
+											<LocalDateTime
+												value={order.createdAt.toISOString()}
+											/>
 										</TableCell>
 										<TableCell className="font-bold">
 											{formatCurrency(order.totalPrice)}
