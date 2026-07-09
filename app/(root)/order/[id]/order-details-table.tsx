@@ -18,6 +18,7 @@ import { PAYPAL_CURRENCY_CODE } from "@/lib/constant";
 import { isOrderExpired } from "@/lib/order-utils";
 import { formatCurrency, formatDateTime, formatId } from "@/lib/utils";
 import { shippingAddressSchema } from "@/lib/validators";
+import AdminOrderActions from "./admin-order-actions";
 import PayPalPayment from "./paypal-payment";
 
 type OrderDetailsTableProps = Readonly<{
@@ -38,6 +39,12 @@ function OrderDetailsTable({
 		!order.isPaid &&
 		!isExpired &&
 		order.paymentMethod.trim().toLowerCase() === "paypal";
+	const canMarkPaid =
+		isAdmin &&
+		!order.isPaid &&
+		!isExpired &&
+		order.paymentMethod.trim().toLowerCase() === "cash on delivery";
+	const canMarkDelivered = isAdmin && order.isPaid && !order.isDelivered;
 
 	return (
 		<section className="space-y-6">
@@ -89,6 +96,11 @@ function OrderDetailsTable({
 									currencyCode={PAYPAL_CURRENCY_CODE}
 								/>
 							) : null}
+							<AdminOrderActions
+								orderId={order.id}
+								canMarkPaid={canMarkPaid}
+								canMarkDelivered={false}
+							/>
 						</CardContent>
 					</Card>
 
@@ -119,6 +131,11 @@ function OrderDetailsTable({
 									Not delivered
 								</Badge>
 							)}
+							<AdminOrderActions
+								orderId={order.id}
+								canMarkPaid={false}
+								canMarkDelivered={canMarkDelivered}
+							/>
 						</CardContent>
 					</Card>
 

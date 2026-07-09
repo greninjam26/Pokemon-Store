@@ -7,6 +7,7 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import {
 	ADMIN_ORDER_SHORT_ID_LOOKUP_LIMIT,
 	ADMIN_ORDERS_PAGE_SIZE,
+	DEFAULT_PAYMENT_METHOD,
 	EXPIRED_ORDER_PAYMENT_STATUS,
 	EXPIRABLE_ORDER_PAYMENT_METHODS,
 	MAX_ORDER_HISTORY_PAGE_SIZE,
@@ -55,6 +56,10 @@ type ExpirableOrder = {
 	createdAt: Date;
 	paymentResult: unknown;
 };
+
+function isCashOnDelivery(paymentMethod: string) {
+	return paymentMethod.trim().toLowerCase() === "cash on delivery";
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
@@ -655,6 +660,134 @@ export async function getAdminOrders({
 		totalPages: Math.ceil(orderCount / pageSize),
 		totalOrders: orderCount,
 	};
+}
+
+export async function updateOrderToPaidCOD(
+	orderId: string,
+): Promise<ActionResponse> {
+	try {
+		await requireAdmin();
+
+		const order = await prisma.order.findUnique({
+			where: { id: orderId },
+			select: {
+				id: true,
+				isPaid: true,
+				paymentMethod: true,
+				totalPrice: true,
+			},
+		});
+
+		if (!order) {
+			return {
+				success: false,
+				message: "Order not found",
+			};
+		}
+
+		if (order.isPaid) {
+			return {
+				success: false,
+				message: "Order is already paid",
+			};
+		}
+
+		if (!isCashOnDelivery(order.paymentMethod)) {
+			return {
+				success: false,
+				message: `Only Cash On Delivery orders can be marked paid manually. This order uses ${order.paymentMethod || DEFAULT_PAYMENT_METHOD}.`,
+			};
+		}
+
+		await prisma.order.update({
+			where: { id: order.id },
+			data: {
+				isPaid: true,
+				paidAt: new Date(),
+				paymentResult: {
+					id: `cod-${order.id}`,
+					status: "COMPLETED",
+					pricePaid: decimalToNumber(order.totalPrice),
+				},
+			},
+		});
+
+		revalidatePath(`/order/${order.id}`);
+		revalidatePath("/account/orders");
+		revalidatePath("/admin");
+		revalidatePath("/admin/orders");
+		revalidatePath("/admin/reports");
+
+		return {
+			success: true,
+			message: "Order marked as paid",
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: formatError(error),
+		};
+	}
+}
+
+export async function deliverOrder(orderId: string): Promise<ActionResponse> {
+	try {
+		await requireAdmin();
+
+		const order = await prisma.order.findUnique({
+			where: { id: orderId },
+			select: {
+				id: true,
+				isPaid: true,
+				isDelivered: true,
+			},
+		});
+
+		if (!order) {
+			return {
+				success: false,
+				message: "Order not found",
+			};
+		}
+
+		if (!order.isPaid) {
+			return {
+				success: false,
+				message: "Order must be paid before it can be marked delivered",
+			};
+		}
+
+		if (order.isDelivered) {
+			return {
+				success: false,
+				message: "Order is already delivered",
+			};
+		}
+
+		await prisma.order.update({
+			where: { id: order.id },
+			data: {
+				isDelivered: true,
+				deliveredAt: new Date(),
+			},
+		});
+
+		revalidatePath(`/order/${order.id}`);
+		revalidatePath("/account/orders");
+		revalidatePath("/admin");
+		revalidatePath("/admin/orders");
+		revalidatePath("/admin/reports");
+
+		return {
+			success: true,
+			message: "Order marked as delivered",
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: formatError(error),
+		};
+	}
 }
 
 export async function getOrderSummary() {
