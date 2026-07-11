@@ -45,6 +45,25 @@ export async function getLatestProducts(): Promise<Product[]> {
 	}));
 }
 
+export async function getFeaturedProducts(): Promise<Product[]> {
+	const products = await prisma.product.findMany({
+		where: {
+			isFeatured: true,
+			banner: {
+				not: null,
+			},
+		},
+		select: productSelect,
+		orderBy: { createdAt: "desc" },
+	});
+
+	return products.map((product) => ({
+		...product,
+		price: decimalToNumber(product.price),
+		rating: decimalToNumber(product.rating),
+	}));
+}
+
 export async function getProductBySlug(slug: string): Promise<Product | null> {
 	const product = await prisma.product.findUnique({
 		where: { slug },

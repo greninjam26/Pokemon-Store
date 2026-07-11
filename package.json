@@ -22,6 +22,8 @@
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"dotenv": "^17.4.2",
+		"embla-carousel-autoplay": "^8.6.0",
+		"embla-carousel-react": "^8.6.0",
 		"lucide-react": "^0.562.0",
 		"next": "^15.5.19",
 		"next-auth": "^5.0.0-beta.25",
