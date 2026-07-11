@@ -41,7 +41,7 @@ function ProductCarousel({ products }: ProductCarouselProps) {
 					loop: products.length > 1,
 				}}
 				plugins={[autoplay.current]}
-				className="group"
+				className="group px-0 sm:px-12"
 			>
 				<CarouselContent>
 					{products.map((product) => (
@@ -93,8 +93,8 @@ function ProductCarousel({ products }: ProductCarouselProps) {
 				</CarouselContent>
 				{products.length > 1 ? (
 					<>
-						<CarouselPrevious className="left-4 hidden bg-background/90 shadow-md hover:bg-background group-hover:flex" />
-						<CarouselNext className="right-4 hidden bg-background/90 shadow-md hover:bg-background group-hover:flex" />
+						<CarouselPrevious className="left-2 hidden bg-background shadow-md hover:bg-muted group-hover:flex sm:left-0" />
+						<CarouselNext className="right-2 hidden bg-background shadow-md hover:bg-muted group-hover:flex sm:right-0" />
 					</>
 				) : null}
 			</Carousel>

@@ -8,7 +8,7 @@ import Menu from "./menu";
 
 function Header() {
 	return (
-		<header className="w-full border-b bg-card/95 shadow-sm">
+		<header className="sticky top-0 z-40 w-full border-b bg-card/95 shadow-sm backdrop-blur supports-backdrop-filter:bg-card/80">
 			<div className="wrapper flex-between py-3">
 				<div className="flex-start">
 					<CategoryDrawer />
