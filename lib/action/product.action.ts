@@ -7,7 +7,9 @@ import prisma from "@/db/prisma";
 import {
 	ADMIN_PRODUCTS_PAGE_SIZE,
 	LATEST_PRODUCTS_LIMIT,
+	PRODUCT_SEARCH_PAGE_SIZE,
 } from "@/lib/constant";
+import { Prisma } from "@/lib/generated/prisma/client";
 import { insertProductSchema, updateProductSchema } from "@/lib/validators";
 import { decimalToNumber, formatError, normalizePagination } from "@/lib/utils";
 import type { Product } from "@/types";
@@ -57,6 +59,94 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 		...product,
 		price: decimalToNumber(product.price),
 		rating: decimalToNumber(product.rating),
+	};
+}
+
+export async function getAllCategories() {
+	const categories = await prisma.product.groupBy({
+		by: ["category"],
+		_count: {
+			category: true,
+		},
+		orderBy: {
+			category: "asc",
+		},
+	});
+
+	return categories.map((category) => ({
+		category: category.category,
+		count: category._count.category,
+	}));
+}
+
+export async function getProducts({
+	category = "",
+	limit = PRODUCT_SEARCH_PAGE_SIZE,
+	page = 1,
+	query = "",
+}: {
+	category?: string;
+	limit?: number;
+	page?: number;
+	query?: string;
+} = {}) {
+	const { pageSize, skip } = normalizePagination({ limit, page });
+	const trimmedCategory = category.trim();
+	const trimmedQuery = query.trim();
+	const where: Prisma.ProductWhereInput = {
+		...(trimmedCategory
+			? {
+					category: {
+						equals: trimmedCategory,
+						mode: "insensitive",
+					},
+				}
+			: {}),
+		...(trimmedQuery
+			? {
+					OR: [
+						{
+							name: {
+								contains: trimmedQuery,
+								mode: "insensitive",
+							},
+						},
+						{
+							description: {
+								contains: trimmedQuery,
+								mode: "insensitive",
+							},
+						},
+						{
+							brand: {
+								contains: trimmedQuery,
+								mode: "insensitive",
+							},
+						},
+					],
+				}
+			: {}),
+	};
+
+	const [products, productCount] = await prisma.$transaction([
+		prisma.product.findMany({
+			where,
+			select: productSelect,
+			orderBy: { createdAt: "desc" },
+			take: pageSize,
+			skip,
+		}),
+		prisma.product.count({ where }),
+	]);
+
+	return {
+		data: products.map((product) => ({
+			...product,
+			price: decimalToNumber(product.price),
+			rating: decimalToNumber(product.rating),
+		})),
+		totalPages: Math.ceil(productCount / pageSize),
+		totalProducts: productCount,
 	};
 }
 

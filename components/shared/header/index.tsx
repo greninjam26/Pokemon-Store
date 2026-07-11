@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { APP_NAME } from "@/lib/constant";
 import AccountNav from "./account-nav";
+import CategoryDrawer from "./category-drawer";
 import Menu from "./menu";
 
 function Header() {
@@ -10,6 +11,7 @@ function Header() {
 		<header className="w-full border-b bg-card/95 shadow-sm">
 			<div className="wrapper flex-between py-3">
 				<div className="flex-start">
+					<CategoryDrawer />
 					<Link href="/" className="flex-start">
 						<Image
 							priority={true}

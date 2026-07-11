@@ -5,12 +5,14 @@ import ProductCard from "./product-card";
 type ProductListProps = {
 	products: Product[];
 	cart?: CartWithItems | null;
+	description?: string;
 	title?: string;
 };
 
 function ProductList({
 	products,
 	cart,
+	description = "Fresh picks for trainers, collectors, and Pokemon fans.",
 	title = "New Arrivals",
 }: ProductListProps) {
 	return (
@@ -18,7 +20,7 @@ function ProductList({
 			<div className="flex flex-col gap-2">
 				<h1 className="h2-bold">{title}</h1>
 				<p className="max-w-2xl text-lg font-medium leading-8 text-muted-foreground">
-					Fresh picks for trainers, collectors, and Pokemon fans.
+					{description}
 				</p>
 			</div>
 			<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
