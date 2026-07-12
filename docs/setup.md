@@ -6,6 +6,7 @@
 - PostgreSQL database connection in `.env`.
 - PayPal sandbox keys if testing PayPal checkout.
 - Stripe test keys if testing credit-card checkout.
+- Resend keys if testing order receipt emails.
 
 ## Install
 
@@ -50,6 +51,8 @@ PAYPAL_API_URL=
 STRIPE_SECRET_KEY=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_WEBHOOK_SECRET=
+RESEND_API_KEY=
+SENDER_EMAIL=
 PAYMENT_METHODS=
 DEFAULT_PAYMENT_METHOD=
 ```

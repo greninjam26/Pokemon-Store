@@ -23,6 +23,7 @@ import {
 	capturePayPalOrder as capturePayPalApiOrder,
 	createPayPalOrder as createPayPalApiOrder,
 } from "@/lib/paypal";
+import { sendOrderReceiptEmail } from "@/lib/email/order-receipt";
 import { isOrderExpired } from "@/lib/order-utils";
 import {
 	createStripePaymentIntent as createStripeApiPaymentIntent,
@@ -296,6 +297,16 @@ async function updateOrderToPaid({
 			paymentResult,
 		},
 	});
+
+	await sendOrderReceiptEmailSafely(order.id);
+}
+
+async function sendOrderReceiptEmailSafely(orderId: string) {
+	try {
+		await sendOrderReceiptEmail(orderId);
+	} catch (error) {
+		console.warn("Order receipt email failed", error);
+	}
 }
 
 export async function createOrder(): Promise<ActionResponse> {
@@ -721,6 +732,7 @@ export async function updateOrderToPaidCOD(
 				},
 			},
 		});
+		await sendOrderReceiptEmailSafely(order.id);
 
 		revalidatePath(`/order/${order.id}`);
 		revalidatePath("/account/orders");
