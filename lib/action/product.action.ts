@@ -31,6 +31,27 @@ const productSelect = {
 	banner: true,
 } as const;
 
+type ProductRecord = Prisma.ProductGetPayload<{
+	select: typeof productSelect;
+}>;
+
+function productToPlainObject(product: ProductRecord): Product {
+	return {
+		...product,
+		price: decimalToNumber(product.price),
+		rating: decimalToNumber(product.rating),
+	};
+}
+
+function productsToPlainObjects(products: ProductRecord[]): Product[] {
+	return products.map(productToPlainObject);
+}
+
+function revalidateProductCatalog() {
+	revalidatePath("/");
+	revalidatePath("/admin/products");
+}
+
 export async function getLatestProducts(): Promise<Product[]> {
 	const products = await prisma.product.findMany({
 		select: productSelect,
@@ -38,11 +59,7 @@ export async function getLatestProducts(): Promise<Product[]> {
 		take: LATEST_PRODUCTS_LIMIT,
 	});
 
-	return products.map((product) => ({
-		...product,
-		price: decimalToNumber(product.price),
-		rating: decimalToNumber(product.rating),
-	}));
+	return productsToPlainObjects(products);
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
@@ -57,11 +74,7 @@ export async function getFeaturedProducts(): Promise<Product[]> {
 		orderBy: { createdAt: "desc" },
 	});
 
-	return products.map((product) => ({
-		...product,
-		price: decimalToNumber(product.price),
-		rating: decimalToNumber(product.rating),
-	}));
+	return productsToPlainObjects(products);
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
@@ -74,11 +87,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 		return null;
 	}
 
-	return {
-		...product,
-		price: decimalToNumber(product.price),
-		rating: decimalToNumber(product.rating),
-	};
+	return productToPlainObject(product);
 }
 
 export async function getAllCategories() {
@@ -211,11 +220,7 @@ export async function getProducts({
 	]);
 
 	return {
-		data: products.map((product) => ({
-			...product,
-			price: decimalToNumber(product.price),
-			rating: decimalToNumber(product.rating),
-		})),
+		data: productsToPlainObjects(products),
 		totalPages: Math.ceil(productCount / pageSize),
 		totalProducts: productCount,
 	};
@@ -233,11 +238,7 @@ export async function getProductById(id: string): Promise<Product | null> {
 		return null;
 	}
 
-	return {
-		...product,
-		price: decimalToNumber(product.price),
-		rating: decimalToNumber(product.rating),
-	};
+	return productToPlainObject(product);
 }
 
 export async function getAdminProducts({
@@ -324,8 +325,7 @@ export async function createProduct(data: z.infer<typeof insertProductSchema>) {
 			},
 		});
 
-		revalidatePath("/");
-		revalidatePath("/admin/products");
+		revalidateProductCatalog();
 
 		return {
 			success: true,
@@ -374,8 +374,7 @@ export async function updateProduct(data: z.infer<typeof updateProductSchema>) {
 			},
 		});
 
-		revalidatePath("/");
-		revalidatePath("/admin/products");
+		revalidateProductCatalog();
 		revalidatePath(`/product/${existingProduct.slug}`);
 		revalidatePath(`/product/${product.slug}`);
 
@@ -425,8 +424,7 @@ export async function deleteProduct(id: string) {
 			where: { id },
 		});
 
-		revalidatePath("/");
-		revalidatePath("/admin/products");
+		revalidateProductCatalog();
 		revalidatePath(`/product/${product.slug}`);
 
 		return {

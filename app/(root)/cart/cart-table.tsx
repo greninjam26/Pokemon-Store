@@ -11,8 +11,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import type { CartWithItems } from "@/lib/action/cart.action";
 import { formatCurrency } from "@/lib/utils";
+import type { CartWithItems } from "@/types";
 
 type CartTableProps = Readonly<{
 	cart: CartWithItems;

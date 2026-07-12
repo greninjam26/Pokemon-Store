@@ -11,30 +11,15 @@ import {
 	CART_SHIPPING_PRICE,
 	CART_TAX_RATE,
 } from "@/lib/constant";
-import {
-	decimalToNumber,
-	formatError,
-	roundToTwoDecimals,
-} from "@/lib/utils";
+import { decimalToNumber, formatError, roundToTwoDecimals } from "@/lib/utils";
 import { cartItemSchema, insertCartSchema } from "@/lib/validators";
-import type { Cart, CartItem } from "@/types";
+import type { ActionResponse, Cart, CartItem, CartWithItems } from "@/types";
 import { getCurrentUserId } from "./helpers";
-
-type ActionResponse = {
-	success: boolean;
-	message: string;
-};
 
 type CartPrices = Pick<
 	Cart,
 	"itemsPrice" | "shippingPrice" | "taxPrice" | "totalPrice"
 >;
-
-export type CartWithItems = Cart & {
-	id: string;
-	items: CartItem[];
-	createdAt: string;
-};
 
 type CartRecord = {
 	id: string;
@@ -68,7 +53,10 @@ function cartToPlainObject(cart: CartRecord): CartWithItems {
 	};
 }
 
-async function mergeCartItems(currentItems: CartItem[], guestItems: CartItem[]) {
+async function mergeCartItems(
+	currentItems: CartItem[],
+	guestItems: CartItem[],
+) {
 	const itemByProductId = new Map<string, CartItem>();
 
 	for (const item of [...currentItems, ...guestItems]) {
@@ -127,6 +115,34 @@ function calcPrice(items: CartItem[]): CartPrices {
 		taxPrice,
 		totalPrice,
 	};
+}
+
+function revalidateCartPaths(productSlug?: string) {
+	if (productSlug) {
+		revalidatePath(`/product/${productSlug}`);
+	}
+
+	revalidatePath("/cart");
+}
+
+async function updateCartItems(cart: CartWithItems, items: CartItem[]) {
+	const updatedCart = insertCartSchema.parse({
+		userId: cart.userId,
+		items,
+		sessionCartId: cart.sessionCartId,
+		...calcPrice(items),
+	});
+
+	return prisma.cart.update({
+		where: { id: cart.id },
+		data: {
+			items: updatedCart.items,
+			itemsPrice: updatedCart.itemsPrice,
+			shippingPrice: updatedCart.shippingPrice,
+			taxPrice: updatedCart.taxPrice,
+			totalPrice: updatedCart.totalPrice,
+		},
+	});
 }
 
 async function ensureSessionCartId() {
@@ -261,8 +277,7 @@ export async function addItemToCart(item: CartItem): Promise<ActionResponse> {
 				data: newCart,
 			});
 
-			revalidatePath(`/product/${product.slug}`);
-			revalidatePath("/cart");
+			revalidateCartPaths(product.slug);
 
 			return {
 				success: true,
@@ -303,8 +318,7 @@ export async function addItemToCart(item: CartItem): Promise<ActionResponse> {
 			},
 		});
 
-		revalidatePath(`/product/${product.slug}`);
-		revalidatePath("/cart");
+		revalidateCartPaths(product.slug);
 
 		return {
 			success: true,
@@ -360,29 +374,10 @@ export async function removeItemFromCart(
 				where: { id: cart.id },
 			});
 		} else {
-			const updatedCart = insertCartSchema.parse({
-				userId: cart.userId,
-				items: updatedItems,
-				sessionCartId: cart.sessionCartId,
-				...calcPrice(updatedItems),
-			});
-
-			await prisma.cart.update({
-				where: { id: cart.id },
-				data: {
-					items: updatedCart.items,
-					itemsPrice: updatedCart.itemsPrice,
-					shippingPrice: updatedCart.shippingPrice,
-					taxPrice: updatedCart.taxPrice,
-					totalPrice: updatedCart.totalPrice,
-				},
-			});
+			await updateCartItems(cart, updatedItems);
 		}
 
-		if (product) {
-			revalidatePath(`/product/${product.slug}`);
-		}
-		revalidatePath("/cart");
+		revalidateCartPaths(product?.slug);
 
 		return {
 			success: true,

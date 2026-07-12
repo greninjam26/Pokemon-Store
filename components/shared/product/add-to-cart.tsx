@@ -6,13 +6,9 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-	addItemToCart,
-	removeItemFromCart,
-	type CartWithItems,
-} from "@/lib/action/cart.action";
+import { addItemToCart, removeItemFromCart } from "@/lib/action/cart.action";
 import { cn } from "@/lib/utils";
-import type { CartItem } from "@/types";
+import type { CartItem, CartWithItems } from "@/types";
 
 type AddToCartProps = Readonly<{
 	item: CartItem;

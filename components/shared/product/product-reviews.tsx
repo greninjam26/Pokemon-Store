@@ -3,7 +3,7 @@ import { Star } from "lucide-react";
 import LocalDateTime from "@/components/shared/local-date-time";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ProductReview } from "@/lib/action/review.action";
+import type { ProductReview } from "@/types";
 import ProductReviewAction from "./product-review-action";
 
 type ProductReviewsProps = Readonly<{

@@ -38,17 +38,10 @@ import {
 	paymentResultSchema,
 	shippingAddressSchema,
 } from "@/lib/validators";
-import type { PaymentResult } from "@/types";
+import type { ActionResponse, PaymentResult } from "@/types";
 import { getMyCart } from "./cart.action";
 import { getCurrentUser, getCurrentUserId, requireAdmin } from "./helpers";
 import { getUserCheckoutInfo } from "./user.actions";
-
-type ActionResponse = {
-	success: boolean;
-	message: string;
-	redirectTo?: string;
-	data?: string;
-};
 
 type ExpirableOrder = {
 	id: string;
@@ -142,6 +135,23 @@ function getUnpaidOrderExpireCutoff() {
 	return new Date(Date.now() - UNPAID_ORDER_EXPIRE_MINUTES * 60 * 1000);
 }
 
+function revalidateOrderActivityPaths(orderId: string) {
+	revalidatePath(`/order/${orderId}`);
+	revalidatePath("/account/orders");
+	revalidatePath("/admin");
+	revalidatePath("/admin/orders");
+	revalidatePath("/admin/reports");
+}
+
+function revalidateExpiredOrderPaths(orderId: string, productSlugs: string[]) {
+	revalidateOrderActivityPaths(orderId);
+	revalidatePath("/");
+
+	for (const slug of productSlugs) {
+		revalidatePath(`/product/${slug}`);
+	}
+}
+
 async function expireUnpaidOrder(
 	orderId: string,
 	{ revalidate = false }: { revalidate?: boolean } = {},
@@ -219,15 +229,7 @@ async function expireUnpaidOrder(
 	});
 
 	if (result.expired && revalidate) {
-		revalidatePath(`/order/${orderId}`);
-		revalidatePath("/account/orders");
-		revalidatePath("/admin/orders");
-		revalidatePath("/admin/reports");
-		revalidatePath("/");
-
-		for (const slug of result.productSlugs) {
-			revalidatePath(`/product/${slug}`);
-		}
+		revalidateExpiredOrderPaths(orderId, result.productSlugs);
 	}
 
 	return result.expired;
@@ -307,6 +309,36 @@ async function sendOrderReceiptEmailSafely(orderId: string) {
 	} catch (error) {
 		console.warn("Order receipt email failed", error);
 	}
+}
+
+async function getPayableUserOrder({
+	orderId,
+	userId,
+}: {
+	orderId: string;
+	userId: string;
+}) {
+	const order = await prisma.order.findFirst({
+		where: {
+			id: orderId,
+			userId,
+		},
+	});
+
+	if (!order) {
+		throw new Error("Order not found");
+	}
+
+	if (shouldExpireOrder(order)) {
+		await expireUnpaidOrder(order.id, { revalidate: true });
+		throw new Error("This order has expired. Please place a new order.");
+	}
+
+	if (order.isPaid) {
+		throw new Error("Order is already paid");
+	}
+
+	return order;
 }
 
 export async function createOrder(): Promise<ActionResponse> {
@@ -734,11 +766,7 @@ export async function updateOrderToPaidCOD(
 		});
 		await sendOrderReceiptEmailSafely(order.id);
 
-		revalidatePath(`/order/${order.id}`);
-		revalidatePath("/account/orders");
-		revalidatePath("/admin");
-		revalidatePath("/admin/orders");
-		revalidatePath("/admin/reports");
+		revalidateOrderActivityPaths(order.id);
 
 		return {
 			success: true,
@@ -794,11 +822,7 @@ export async function deliverOrder(orderId: string): Promise<ActionResponse> {
 			},
 		});
 
-		revalidatePath(`/order/${order.id}`);
-		revalidatePath("/account/orders");
-		revalidatePath("/admin");
-		revalidatePath("/admin/orders");
-		revalidatePath("/admin/reports");
+		revalidateOrderActivityPaths(order.id);
 
 		return {
 			success: true,
@@ -1152,27 +1176,7 @@ export async function createPayPalOrder(
 			};
 		}
 
-		const order = await prisma.order.findFirst({
-			where: {
-				id: orderId,
-				userId,
-			},
-		});
-
-		if (!order) {
-			throw new Error("Order not found");
-		}
-
-		if (shouldExpireOrder(order)) {
-			await expireUnpaidOrder(order.id, { revalidate: true });
-			throw new Error(
-				"This order has expired. Please place a new order.",
-			);
-		}
-
-		if (order.isPaid) {
-			throw new Error("Order is already paid");
-		}
+		const order = await getPayableUserOrder({ orderId, userId });
 
 		const paypalOrder = await createPayPalApiOrder(
 			decimalToNumber(order.totalPrice),
@@ -1218,27 +1222,7 @@ export async function createStripePaymentIntent(
 			};
 		}
 
-		const order = await prisma.order.findFirst({
-			where: {
-				id: orderId,
-				userId,
-			},
-		});
-
-		if (!order) {
-			throw new Error("Order not found");
-		}
-
-		if (shouldExpireOrder(order)) {
-			await expireUnpaidOrder(order.id, { revalidate: true });
-			throw new Error(
-				"This order has expired. Please place a new order.",
-			);
-		}
-
-		if (order.isPaid) {
-			throw new Error("Order is already paid");
-		}
+		const order = await getPayableUserOrder({ orderId, userId });
 
 		if (!isCreditCard(order.paymentMethod)) {
 			throw new Error("This order is not set up for credit card payment");
@@ -1390,10 +1374,7 @@ export async function markStripeOrderPaid({
 		paymentResult,
 	});
 
-	revalidatePath(`/order/${orderId}`);
-	revalidatePath("/account/orders");
-	revalidatePath("/admin/orders");
-	revalidatePath("/admin/reports");
+	revalidateOrderActivityPaths(orderId);
 
 	return { alreadyPaid: false };
 }
@@ -1446,27 +1427,7 @@ export async function approvePayPalOrder(
 			};
 		}
 
-		const order = await prisma.order.findFirst({
-			where: {
-				id: orderId,
-				userId,
-			},
-		});
-
-		if (!order) {
-			throw new Error("Order not found");
-		}
-
-		if (shouldExpireOrder(order)) {
-			await expireUnpaidOrder(order.id, { revalidate: true });
-			throw new Error(
-				"This order has expired. Please place a new order.",
-			);
-		}
-
-		if (order.isPaid) {
-			throw new Error("Order is already paid");
-		}
+		const order = await getPayableUserOrder({ orderId, userId });
 
 		const pendingPaymentResult = order.paymentResult;
 		const pendingPayPalOrderId = isRecord(pendingPaymentResult)
@@ -1517,7 +1478,7 @@ export async function approvePayPalOrder(
 			paymentResult,
 		});
 
-		revalidatePath(`/order/${orderId}`);
+		revalidateOrderActivityPaths(orderId);
 
 		return {
 			success: true,

@@ -1,6 +1,5 @@
-import type { CartWithItems } from "@/lib/action/cart.action";
 import { cn } from "@/lib/utils";
-import type { Product } from "@/types";
+import type { CartWithItems, Product } from "@/types";
 import ProductCard from "./product-card";
 
 type ProductListProps = {

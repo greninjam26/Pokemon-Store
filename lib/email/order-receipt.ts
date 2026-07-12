@@ -2,7 +2,13 @@ import { Resend } from "resend";
 
 import prisma from "@/db/prisma";
 import { APP_NAME, SERVER_URL } from "@/lib/constant";
-import { decimalToNumber, formatCurrency, formatId } from "@/lib/utils";
+import {
+	decimalToNumber,
+	formatCurrency,
+	formatId,
+	getCleanUserName,
+} from "@/lib/utils";
+import { shippingAddressSchema } from "@/lib/validators";
 
 const globalForResend = globalThis as unknown as {
 	resend?: Resend;
@@ -38,11 +44,13 @@ function escapeHtml(value: string) {
 }
 
 function formatAddress(value: unknown) {
-	if (typeof value !== "object" || value === null) {
+	const result = shippingAddressSchema.safeParse(value);
+
+	if (!result.success) {
 		return "";
 	}
 
-	const address = value as Record<string, unknown>;
+	const address = result.data;
 	const lines = [
 		address.fullName,
 		[
@@ -113,10 +121,7 @@ export async function sendOrderReceiptEmail(orderId: string) {
 	const shippingPrice = formatCurrency(decimalToNumber(order.shippingPrice));
 	const taxPrice = formatCurrency(decimalToNumber(order.taxPrice));
 	const totalPrice = formatCurrency(decimalToNumber(order.totalPrice));
-	const customerName =
-		order.user.name && order.user.name !== "NO_NAME"
-			? order.user.name
-			: "Trainer";
+	const customerName = getCleanUserName(order.user.name) || "Trainer";
 	const itemRows = order.orderItems
 		.map((item) => {
 			const price = decimalToNumber(item.price);
@@ -136,7 +141,7 @@ export async function sendOrderReceiptEmail(orderId: string) {
 		})
 		.join("");
 
-	await resend.emails.send({
+	const response = await resend.emails.send({
 		from,
 		to: order.user.email,
 		subject: `${APP_NAME} receipt ${formatId(order.id)}`,
@@ -193,6 +198,10 @@ export async function sendOrderReceiptEmail(orderId: string) {
 					</a>
 				</div>
 			</div>
-		`,
+			`,
 	});
+
+	if (response.error) {
+		throw new Error(response.error.message);
+	}
 }

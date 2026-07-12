@@ -1,8 +1,7 @@
 import Link from "next/link";
 
-import type { CartWithItems } from "@/lib/action/cart.action";
 import { formatCurrency } from "@/lib/utils";
-import type { Product } from "@/types";
+import type { CartWithItems, Product } from "@/types";
 import FadeInImage from "../fade-in-image";
 import AddToCart from "./add-to-cart";
 

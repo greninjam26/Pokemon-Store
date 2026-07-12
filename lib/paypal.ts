@@ -1,3 +1,5 @@
+import type { PayPalCaptureResponse } from "@/types";
+
 import { PAYPAL_CURRENCY_CODE } from "./constant";
 
 const PAYPAL_API_URL =
@@ -13,23 +15,6 @@ type PayPalApiError = {
 	name?: string;
 	message?: string;
 	details?: { issue?: string; description?: string }[];
-};
-
-export type PayPalCaptureResponse = {
-	id: string;
-	status: string;
-	payer?: {
-		email_address?: string;
-	};
-	purchase_units?: {
-		payments?: {
-			captures?: {
-				amount?: {
-					value?: string;
-				};
-			}[];
-		};
-	}[];
 };
 
 function getPayPalCredentials() {

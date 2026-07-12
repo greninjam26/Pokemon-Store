@@ -22,13 +22,21 @@ import {
 	signUpFormSchema,
 	userProfileSchema,
 } from "@/lib/validators";
-import type { PaymentMethod, ShippingAddress, UserProfile } from "@/types";
+import type {
+	ActionResponse,
+	PaymentMethod,
+	ShippingAddress,
+	UserProfile,
+} from "@/types";
 import { getCurrentUserId, requireAdmin } from "./helpers";
 
-type ActionResponse = {
-	success: boolean;
-	message: string;
-};
+function revalidateAdminUserPaths(userId?: string) {
+	revalidatePath("/admin/users");
+
+	if (userId) {
+		revalidatePath(`/admin/users/${userId}`);
+	}
+}
 
 export async function getUserProfile() {
 	const userId = await getCurrentUserId();
@@ -177,8 +185,7 @@ export async function updateUser(
 			},
 		});
 
-		revalidatePath("/admin/users");
-		revalidatePath(`/admin/users/${user.id}`);
+		revalidateAdminUserPaths(user.id);
 
 		return {
 			success: true,
@@ -234,7 +241,7 @@ export async function deleteUser(id: string): Promise<ActionResponse> {
 			where: { id },
 		});
 
-		revalidatePath("/admin/users");
+		revalidateAdminUserPaths();
 
 		return {
 			success: true,

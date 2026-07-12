@@ -6,13 +6,10 @@ import type { z } from "zod";
 import prisma from "@/db/prisma";
 import { formatError, getCustomerDisplayName } from "@/lib/utils";
 import { reviewSchema } from "@/lib/validators";
+import type { ProductReview } from "@/types";
 import { getCurrentUserId } from "./helpers";
 
 type ReviewInput = z.infer<typeof reviewSchema>;
-
-export type ProductReview = Awaited<
-	ReturnType<typeof getProductReviews>
->[number];
 
 async function getVerifiedPurchaseStatus({
 	productId,
@@ -61,7 +58,9 @@ async function updateProductReviewSummary(productId: string) {
 	});
 }
 
-export async function getProductReviews(productId: string) {
+export async function getProductReviews(
+	productId: string,
+): Promise<ProductReview[]> {
 	const reviews = await prisma.review.findMany({
 		where: {
 			productId,
