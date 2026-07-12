@@ -1,4 +1,5 @@
 import type { CartWithItems } from "@/lib/action/cart.action";
+import { cn } from "@/lib/utils";
 import type { Product } from "@/types";
 import ProductCard from "./product-card";
 
@@ -6,6 +7,7 @@ type ProductListProps = {
 	products: Product[];
 	cart?: CartWithItems | null;
 	description?: string;
+	gridClassName?: string;
 	title?: string;
 };
 
@@ -13,6 +15,7 @@ function ProductList({
 	products,
 	cart,
 	description = "Fresh picks for trainers, collectors, and Pokemon fans.",
+	gridClassName,
 	title = "New Arrivals",
 }: ProductListProps) {
 	return (
@@ -23,7 +26,12 @@ function ProductList({
 					{description}
 				</p>
 			</div>
-			<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+			<div
+				className={cn(
+					"grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4",
+					gridClassName,
+				)}
+			>
 				{products.map((product) => (
 					<ProductCard
 						key={product.slug}

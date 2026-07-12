@@ -100,18 +100,64 @@ export async function getAllCategories() {
 
 export async function getProducts({
 	category = "",
+	featured = "",
+	inStock = "",
 	limit = PRODUCT_SEARCH_PAGE_SIZE,
+	maxPrice = "",
+	minPrice = "",
 	page = 1,
 	query = "",
+	rating = "",
+	sort = "newest",
 }: {
 	category?: string;
+	featured?: string;
+	inStock?: string;
 	limit?: number;
+	maxPrice?: string;
+	minPrice?: string;
 	page?: number;
 	query?: string;
+	rating?: string;
+	sort?: string;
 } = {}) {
 	const { pageSize, skip } = normalizePagination({ limit, page });
 	const trimmedCategory = category.trim();
+	const trimmedMaxPrice = maxPrice.trim();
+	const trimmedMinPrice = minPrice.trim();
+	const trimmedRating = rating.trim();
 	const trimmedQuery = query.trim();
+	const minPriceNumber = Number(trimmedMinPrice);
+	const maxPriceNumber = Number(trimmedMaxPrice);
+	const ratingNumber = Number(trimmedRating);
+	const priceFilter: Prisma.DecimalFilter<"Product"> = {};
+
+	if (
+		trimmedMinPrice &&
+		Number.isFinite(minPriceNumber) &&
+		minPriceNumber >= 0
+	) {
+		priceFilter.gte = minPriceNumber;
+	}
+
+	if (
+		trimmedMaxPrice &&
+		Number.isFinite(maxPriceNumber) &&
+		maxPriceNumber >= 0
+	) {
+		priceFilter.lte = maxPriceNumber;
+	}
+
+	const orderBy: Prisma.ProductOrderByWithRelationInput[] =
+		sort === "price-low"
+			? [{ price: "asc" }]
+			: sort === "price-high"
+				? [{ price: "desc" }]
+				: sort === "rating"
+					? [{ rating: "desc" }, { numReviews: "desc" }]
+					: sort === "name"
+						? [{ name: "asc" }]
+						: [{ createdAt: "desc" }];
 	const where: Prisma.ProductWhereInput = {
 		...(trimmedCategory
 			? {
@@ -145,13 +191,19 @@ export async function getProducts({
 					],
 				}
 			: {}),
+		...(Object.keys(priceFilter).length > 0 ? { price: priceFilter } : {}),
+		...(trimmedRating && Number.isFinite(ratingNumber) && ratingNumber > 0
+			? { rating: { gte: ratingNumber } }
+			: {}),
+		...(inStock === "true" ? { stock: { gt: 0 } } : {}),
+		...(featured === "true" ? { isFeatured: true } : {}),
 	};
 
 	const [products, productCount] = await prisma.$transaction([
 		prisma.product.findMany({
 			where,
 			select: productSelect,
-			orderBy: { createdAt: "desc" },
+			orderBy,
 			take: pageSize,
 			skip,
 		}),

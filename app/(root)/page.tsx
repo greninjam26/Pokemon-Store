@@ -1,5 +1,8 @@
+import Link from "next/link";
+
 import ProductCarousel from "@/components/shared/product/product-carousel";
 import ProductList from "@/components/shared/product/product-list";
+import { Button } from "@/components/ui/button";
 import { getMyCart } from "@/lib/action/cart.action";
 import {
 	getFeaturedProducts,
@@ -23,6 +26,15 @@ async function Homepage() {
 				title="Newest Arrivals"
 				cart={cart}
 			/>
+			<div className="flex justify-center">
+				<Button
+					asChild
+					size="lg"
+					className="h-11 min-w-56 rounded-full px-8 text-base font-black shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25"
+				>
+					<Link href="/search">View All Products</Link>
+				</Button>
+			</div>
 		</div>
 	);
 }

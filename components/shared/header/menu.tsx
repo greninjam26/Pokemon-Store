@@ -12,6 +12,7 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet";
 import ModeToggle from "./mode-toggle";
+import SearchForm from "./search-form";
 import UserButton from "./user-button";
 
 function Menu() {
@@ -53,6 +54,7 @@ function Menu() {
 								</span>
 								<ModeToggle className="border border-border" />
 							</div>
+							<SearchForm className="flex-col items-stretch" />
 							<SheetClose asChild>
 								<Button
 									asChild

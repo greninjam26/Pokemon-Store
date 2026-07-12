@@ -5,6 +5,7 @@ import { APP_NAME } from "@/lib/constant";
 import AccountNav from "./account-nav";
 import CategoryDrawer from "./category-drawer";
 import Menu from "./menu";
+import SearchForm from "./search-form";
 
 function Header() {
 	return (
@@ -26,6 +27,10 @@ function Header() {
 					</Link>
 					<AccountNav />
 				</div>
+				<SearchForm
+					className="mx-4 hidden w-full max-w-md lg:flex"
+					inputClassName="bg-background"
+				/>
 				<Menu />
 			</div>
 		</header>
