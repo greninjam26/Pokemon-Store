@@ -17,6 +17,7 @@ import {
 import { getOrderById } from "@/lib/action/order.action";
 import {
 	PAYMENT_METHOD_CASH_ON_DELIVERY,
+	PAYMENT_METHOD_CREDIT_CARD,
 	PAYMENT_METHOD_PAYPAL,
 	PAYPAL_CURRENCY_CODE,
 } from "@/lib/constant";
@@ -25,17 +26,20 @@ import { formatCurrency, formatId } from "@/lib/utils";
 import { shippingAddressSchema } from "@/lib/validators";
 import AdminOrderActions from "./admin-order-actions";
 import PayPalPayment from "./paypal-payment";
+import StripePayment from "./stripe-payment";
 
 type OrderDetailsTableProps = Readonly<{
 	order: NonNullable<Awaited<ReturnType<typeof getOrderById>>>;
 	isAdmin?: boolean;
 	paypalClientId: string;
+	stripePublishableKey: string;
 }>;
 
 function OrderDetailsTable({
 	order,
 	isAdmin = false,
 	paypalClientId,
+	stripePublishableKey,
 }: OrderDetailsTableProps) {
 	const address = shippingAddressSchema.parse(order.shippingAddress);
 	const isExpired = isOrderExpired(order.paymentResult);
@@ -45,6 +49,12 @@ function OrderDetailsTable({
 		!isExpired &&
 		order.paymentMethod.trim().toLowerCase() ===
 			PAYMENT_METHOD_PAYPAL.toLowerCase();
+	const shouldShowStripe =
+		!isAdmin &&
+		!order.isPaid &&
+		!isExpired &&
+		order.paymentMethod.trim().toLowerCase() ===
+			PAYMENT_METHOD_CREDIT_CARD.toLowerCase();
 	const canMarkPaid =
 		isAdmin &&
 		!order.isPaid &&
@@ -101,6 +111,14 @@ function OrderDetailsTable({
 									orderId={order.id}
 									paypalClientId={paypalClientId}
 									currencyCode={PAYPAL_CURRENCY_CODE}
+								/>
+							) : null}
+							{shouldShowStripe ? (
+								<StripePayment
+									orderId={order.id}
+									stripePublishableKey={
+										stripePublishableKey
+									}
 								/>
 							) : null}
 							<AdminOrderActions
@@ -249,7 +267,9 @@ function OrderDetailsTable({
 								{formatCurrency(order.totalPrice)}
 							</span>
 						</div>
-						{!shouldShowPayPal && !order.isPaid ? (
+						{!shouldShowPayPal &&
+						!shouldShowStripe &&
+						!order.isPaid ? (
 							<div className="rounded-lg border bg-muted/40 p-4 text-sm font-medium leading-6 text-muted-foreground">
 								{isExpired ? (
 									<>

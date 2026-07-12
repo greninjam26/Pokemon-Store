@@ -15,6 +15,7 @@ import {
 	ORDER_HISTORY_PAGE_SIZE,
 	ORDER_REPORT_TIME_ZONE,
 	PAYMENT_METHOD_CASH_ON_DELIVERY,
+	PAYMENT_METHOD_CREDIT_CARD,
 	UNPAID_ORDER_EXPIRE_BATCH_SIZE,
 	UNPAID_ORDER_EXPIRE_MINUTES,
 } from "@/lib/constant";
@@ -23,6 +24,12 @@ import {
 	createPayPalOrder as createPayPalApiOrder,
 } from "@/lib/paypal";
 import { isOrderExpired } from "@/lib/order-utils";
+import {
+	createStripePaymentIntent as createStripeApiPaymentIntent,
+	fromStripeAmount,
+	getStripePaymentIntent,
+	toStripeAmount,
+} from "@/lib/stripe";
 import { decimalToNumber, formatError, normalizePagination } from "@/lib/utils";
 import {
 	insertOrderItemSchema,
@@ -54,6 +61,13 @@ function isCashOnDelivery(paymentMethod: string) {
 	return (
 		paymentMethod.trim().toLowerCase() ===
 		PAYMENT_METHOD_CASH_ON_DELIVERY.toLowerCase()
+	);
+}
+
+function isCreditCard(paymentMethod: string) {
+	return (
+		paymentMethod.trim().toLowerCase() ===
+		PAYMENT_METHOD_CREDIT_CARD.toLowerCase()
 	);
 }
 
@@ -1169,6 +1183,233 @@ export async function createPayPalOrder(
 			success: true,
 			message: "PayPal order created successfully",
 			data: paypalOrder.id,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: formatError(error),
+		};
+	}
+}
+
+export async function createStripePaymentIntent(
+	orderId: string,
+): Promise<ActionResponse> {
+	try {
+		const userId = await getCurrentUserId();
+
+		if (!userId) {
+			return {
+				success: false,
+				message: "Please sign in to pay for your order",
+				redirectTo: `/sign-in?callbackUrl=/order/${orderId}`,
+			};
+		}
+
+		const order = await prisma.order.findFirst({
+			where: {
+				id: orderId,
+				userId,
+			},
+		});
+
+		if (!order) {
+			throw new Error("Order not found");
+		}
+
+		if (shouldExpireOrder(order)) {
+			await expireUnpaidOrder(order.id, { revalidate: true });
+			throw new Error(
+				"This order has expired. Please place a new order.",
+			);
+		}
+
+		if (order.isPaid) {
+			throw new Error("Order is already paid");
+		}
+
+		if (!isCreditCard(order.paymentMethod)) {
+			throw new Error("This order is not set up for credit card payment");
+		}
+
+		const orderTotal = decimalToNumber(order.totalPrice);
+		const pendingPaymentResult = order.paymentResult;
+		const pendingStripePaymentIntentId = isRecord(pendingPaymentResult)
+			? pendingPaymentResult.id
+			: undefined;
+		const pendingStripeClientSecret = isRecord(pendingPaymentResult)
+			? pendingPaymentResult.clientSecret
+			: undefined;
+
+		if (
+			typeof pendingStripePaymentIntentId === "string" &&
+			pendingStripePaymentIntentId.startsWith("pi_") &&
+			typeof pendingStripeClientSecret === "string"
+		) {
+			const paymentIntent = await getStripePaymentIntent(
+				pendingStripePaymentIntentId,
+			);
+
+			if (
+				paymentIntent.amount === toStripeAmount(orderTotal) &&
+				paymentIntent.status !== "canceled" &&
+				paymentIntent.status !== "succeeded"
+			) {
+				return {
+					success: true,
+					message: "Stripe payment is ready",
+					data: pendingStripeClientSecret,
+				};
+			}
+		}
+
+		const paymentIntent = await createStripeApiPaymentIntent({
+			amount: orderTotal,
+			orderId: order.id,
+			userId,
+		});
+
+		if (!paymentIntent.client_secret) {
+			throw new Error("Unable to create Stripe payment");
+		}
+
+		await prisma.order.update({
+			where: { id: order.id },
+			data: {
+				paymentResult: {
+					id: paymentIntent.id,
+					status: paymentIntent.status,
+					pricePaid: 0,
+					clientSecret: paymentIntent.client_secret,
+				},
+			},
+		});
+
+		revalidatePath(`/order/${orderId}`);
+
+		return {
+			success: true,
+			message: "Stripe payment is ready",
+			data: paymentIntent.client_secret,
+		};
+	} catch (error) {
+		return {
+			success: false,
+			message: formatError(error),
+		};
+	}
+}
+
+export async function markStripeOrderPaid({
+	orderId,
+	paymentIntentId,
+	userId,
+}: {
+	orderId: string;
+	paymentIntentId: string;
+	userId: string;
+}) {
+	const order = await prisma.order.findFirst({
+		where: {
+			id: orderId,
+			userId,
+		},
+	});
+
+	if (!order) {
+		throw new Error("Order not found");
+	}
+
+	if (!isCreditCard(order.paymentMethod)) {
+		throw new Error("This order is not set up for credit card payment");
+	}
+
+	const pendingPaymentResult = order.paymentResult;
+	const pendingStripePaymentIntentId = isRecord(pendingPaymentResult)
+		? pendingPaymentResult.id
+		: undefined;
+
+	if (
+		typeof pendingStripePaymentIntentId !== "string" ||
+		pendingStripePaymentIntentId !== paymentIntentId
+	) {
+		throw new Error("Stripe payment does not match this order");
+	}
+
+	if (order.isPaid) {
+		return { alreadyPaid: true };
+	}
+
+	if (shouldExpireOrder(order)) {
+		await expireUnpaidOrder(order.id, { revalidate: true });
+		throw new Error("This order has expired. Please place a new order.");
+	}
+
+	const paymentIntent = await getStripePaymentIntent(paymentIntentId);
+	const orderTotal = decimalToNumber(order.totalPrice);
+
+	if (
+		paymentIntent.metadata.orderId !== orderId ||
+		paymentIntent.metadata.userId !== userId
+	) {
+		throw new Error("Stripe payment metadata does not match this order");
+	}
+
+	if (paymentIntent.status !== "succeeded") {
+		throw new Error("Stripe payment has not been completed");
+	}
+
+	if (paymentIntent.amount_received !== toStripeAmount(orderTotal)) {
+		throw new Error("Stripe payment amount does not match this order");
+	}
+
+	const paymentResult = paymentResultSchema.parse({
+		id: paymentIntent.id,
+		status: paymentIntent.status,
+		...(paymentIntent.receipt_email
+			? { email_address: paymentIntent.receipt_email }
+			: {}),
+		pricePaid: fromStripeAmount(paymentIntent.amount_received),
+	});
+
+	await updateOrderToPaid({
+		orderId,
+		userId,
+		paymentResult,
+	});
+
+	revalidatePath(`/order/${orderId}`);
+	revalidatePath("/account/orders");
+	revalidatePath("/admin/orders");
+	revalidatePath("/admin/reports");
+
+	return { alreadyPaid: false };
+}
+
+export async function approveStripePayment(
+	orderId: string,
+	paymentIntentId: string,
+): Promise<ActionResponse> {
+	try {
+		const userId = await getCurrentUserId();
+
+		if (!userId) {
+			return {
+				success: false,
+				message: "Please sign in to pay for your order",
+				redirectTo: `/sign-in?callbackUrl=/order/${orderId}`,
+			};
+		}
+
+		await markStripeOrderPaid({
+			orderId,
+			paymentIntentId,
+			userId,
+		});
+
+		return {
+			success: true,
+			message: "Your order has been paid",
 		};
 	} catch (error) {
 		return {

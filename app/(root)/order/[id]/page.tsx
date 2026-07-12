@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { auth } from "@/auth";
 import { getOrderById } from "@/lib/action/order.action";
+import { getStripePublishableKey } from "@/lib/stripe";
 import OrderDetailsTable from "./order-details-table";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ async function OrderDetailsPage({ params }: OrderDetailsPageProps) {
 			order={order}
 			isAdmin={isAdmin}
 			paypalClientId={process.env.PAYPAL_CLIENT_ID || "sb"}
+			stripePublishableKey={getStripePublishableKey()}
 		/>
 	);
 }

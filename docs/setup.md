@@ -5,6 +5,7 @@
 - Node.js compatible with Next 15 and React 19.
 - PostgreSQL database connection in `.env`.
 - PayPal sandbox keys if testing PayPal checkout.
+- Stripe test keys if testing credit-card checkout.
 
 ## Install
 
@@ -46,6 +47,9 @@ NEXT_PUBLIC_SERVER_URL=
 PAYPAL_CLIENT_ID=
 PAYPAL_APP_SECRET=
 PAYPAL_API_URL=
+STRIPE_SECRET_KEY=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
 PAYMENT_METHODS=
 DEFAULT_PAYMENT_METHOD=
 ```
