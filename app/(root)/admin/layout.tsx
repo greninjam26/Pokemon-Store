@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
-import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { Card, CardContent } from "@/components/ui/card";
+import { requireAdmin } from "@/lib/auth-guard";
 import AdminNav from "./admin-nav";
 
 type AdminLayoutProps = Readonly<{
@@ -10,12 +9,7 @@ type AdminLayoutProps = Readonly<{
 }>;
 
 async function AdminLayout({ children }: AdminLayoutProps) {
-	const session = await auth();
-	const role = (session?.user as { role?: string } | undefined)?.role;
-
-	if (role !== "admin") {
-		redirect("/");
-	}
+	await requireAdmin();
 
 	return (
 		<section className="space-y-6">
