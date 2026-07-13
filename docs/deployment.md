@@ -2,24 +2,11 @@
 
 ## Vercel Notes
 
-Set production environment variables in Vercel before deploying:
-
-```env
-DATABASE_URL=
-AUTH_SECRET=
-NEXTAUTH_SECRET=
-NEXT_PUBLIC_SERVER_URL=
-PAYPAL_CLIENT_ID=
-PAYPAL_APP_SECRET=
-PAYPAL_API_URL=
-STRIPE_SECRET_KEY=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-STRIPE_WEBHOOK_SECRET=
-RESEND_API_KEY=
-SENDER_EMAIL=
-```
+Set production environment variables in Vercel before deploying. Use `.env.example` as the checklist, then replace local and sandbox values with production values where needed.
 
 `NEXT_PUBLIC_SERVER_URL` should match the deployed app URL.
+
+Use sandbox payment keys in preview deployments. Use live PayPal and Stripe keys only when the store is ready to accept real payments.
 
 ## Prisma
 
@@ -43,12 +30,13 @@ components/shared/local-date-time.tsx
 
 That component formats dates in the browser timezone, so it works correctly on Vercel.
 
-## Common Checks
+## Pre-Deploy Checks
 
 Before deployment, run:
 
 ```bash
-npx tsc --noEmit
 npm run lint
+npx tsc --noEmit
 npm test -- --runInBand
+npm run build
 ```

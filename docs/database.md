@@ -46,7 +46,7 @@ Create and apply a migration:
 npx prisma migrate dev --name migration-name
 ```
 
-Only run migrations when the project owner asks.
+Apply production migrations before deploying code that depends on new schema fields.
 
 ## Seed
 
@@ -59,6 +59,8 @@ db/seed.ts
 
 The sample products are Pokemon TCG products. Product images are stored under `public/images/sample-products`.
 
-## Current Migration Notes
+## Model Notes
 
-The database includes product, user, auth, cart, order, and order item models. The user model also has `orderHistoryPageSize` for account order history pagination.
+The database includes product, user, auth, cart, order, order item, and review models. The user model also has `orderHistoryPageSize` for account order history pagination.
+
+Product stock is decremented when an order is placed. Unpaid online-payment orders can expire and return stock to products.

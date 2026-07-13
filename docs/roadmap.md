@@ -1,50 +1,28 @@
 # Roadmap
 
-## Admin
+This project is feature-complete for a portfolio/full-stack demo store. The sections below separate what is already implemented from possible future production improvements.
 
-Already scaffolded:
+## Implemented
 
-- Dashboard
-- Products
-- Orders
-- Users
-- Reports
+- Storefront homepage, featured carousel, product cards, and product detail pages
+- Search page with category, stock, rating, price, sorting, and pagination controls
+- Cart, checkout, shipping address, payment method, place order, and order detail pages
+- PayPal, Stripe, and cash-on-delivery payment flows
+- Stripe webhook handling
+- Email receipts through Resend
+- Product reviews with verified-purchase labels
+- Account profile and order history
+- Admin dashboard, reports, products, orders, and users
+- Product image uploads through UploadThing
+- Unpaid online order expiration with stock restoration
 
-Real data currently exists for:
+## Possible Production Improvements
 
-- Admin dashboard
-- Admin products
-- Admin orders
-- Admin users
-
-Next likely admin features:
-
-- Product create/edit/delete
-- Order delivery status updates
-- User detail page
-- User role management
-- Reports with charts and date ranges
-
-## Customer Account
-
-Implemented:
-
-- Profile
-- Order history
-- Per-user order history page size
-
-Possible future features:
-
+- Password reset and email verification
 - Saved addresses
-- Email verification before email changes
-- Password reset
-- Wishlist
-
-## Store
-
-Possible future features:
-
-- Product reviews
-- Product search/filter page
-- Cart merge improvements across devices
-- Checkout confirmation emails
+- Wishlist or favorites
+- Inventory reservation windows with clearer customer messaging
+- Refund and cancellation workflow
+- Richer admin report filters and CSV exports
+- Order shipment tracking
+- More automated tests for checkout, payments, and admin flows
