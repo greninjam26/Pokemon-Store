@@ -57,6 +57,12 @@ db/simple-data.ts
 db/seed.ts
 ```
 
+Run the configured seed command:
+
+```bash
+npx prisma db seed
+```
+
 The sample products are Pokemon TCG products. Product images are stored under `public/images/sample-products`.
 
 ## Model Notes

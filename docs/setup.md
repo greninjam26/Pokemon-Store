@@ -16,36 +16,6 @@ npm install
 
 `postinstall` runs Prisma generate automatically.
 
-## Run Locally
-
-```bash
-npm run dev
-```
-
-Open:
-
-```txt
-http://localhost:3000
-```
-
-## Quality Checks
-
-```bash
-npm run lint
-npx tsc --noEmit
-npm test -- --runInBand
-npm run build
-```
-
-Use `npm run start` after `npm run build` if you want to run the production build locally.
-
-## App Areas
-
-- Storefront: `app/(root)`
-- Auth: `app/(auth)`
-- Admin: `app/(root)/admin`
-- API auth route: `app/api/auth/[...nextauth]/route.ts`
-
 ## Environment Variables
 
 Use `.env.example` as the safe template:
@@ -90,3 +60,46 @@ UNPAID_ORDER_EXPIRE_MINUTES=60
 ```
 
 Provider-specific details are documented in `docs/paypal.md`, `docs/stripe.md`, `docs/uploadthing.md`, and `docs/email.md`.
+
+## Database Setup
+
+After `.env` has a valid `DATABASE_URL`, apply migrations and seed sample data:
+
+```bash
+npx prisma migrate dev
+npx prisma db seed
+```
+
+This creates the local schema and adds sample Pokemon TCG products and users.
+
+## Run Locally
+
+After dependencies, environment variables, migrations, and seed data are ready:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```txt
+http://localhost:3000
+```
+
+## Quality Checks
+
+```bash
+npm run lint
+npx tsc --noEmit
+npm test -- --runInBand
+npm run build
+```
+
+Use `npm run start` after `npm run build` if you want to run the production build locally.
+
+## App Areas
+
+- Storefront: `app/(root)`
+- Auth: `app/(auth)`
+- Admin: `app/(root)/admin`
+- API auth route: `app/api/auth/[...nextauth]/route.ts`
